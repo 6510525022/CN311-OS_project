@@ -1,12 +1,14 @@
 public class GameState {
     private int gamePhase = 0;
+    private String[] phaseName = {"lobby", "in-game", "result"}; // 0 = lobby, 1 = in-game, 2 = result
 
     public synchronized int getGamePhase() {
+        System.out.println("GamePhase ถูกสร้าง: " + phaseName[gamePhase] + "[" + gamePhase + "]" );
         return gamePhase;
     }
 
     public synchronized void setGamePhase(int newPhase) {
         this.gamePhase = newPhase;
-        System.out.println("GamePhase เปลี่ยนเป็น: " + newPhase);
+        System.out.println("GamePhase เปลี่ยนเป็น: " + phaseName[newPhase] + "[" + newPhase + "]" );
     }
 }

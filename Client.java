@@ -28,7 +28,7 @@ public class Client {
                 if (message.equalsIgnoreCase("exit"))
                     break;
 
-                // ✅ อ่านทุกบรรทัดจาก server จนเจอ "END"
+                // อ่านข้อมูลจาก Server จนกว่าจะถึง "END"
                 String responseLine;
                 while (!(responseLine = reader.readLine()).equals("END")) {
                     System.out.println("Server: " + responseLine);
