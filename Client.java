@@ -8,20 +8,36 @@ public class Client {
         int port = 1234;
 
         try (Socket socket = new Socket(host, port)) {
+            Scanner scanner = new Scanner(System.in);
+
+            InputStream input = socket.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+
             OutputStream output = socket.getOutputStream();
             PrintWriter writer = new PrintWriter(output, true);
 
-            Scanner scanner = new Scanner(System.in);
-            System.out.print("พิมพ์ข้อความที่ต้องการส่ง: ");
-            String message = scanner.nextLine();
+            System.out.println(reader.readLine());
 
-            writer.println(message);
+            String message;
+
+            while (true) {
+                System.out.print("คุณพิมพ์: ");
+                message = scanner.nextLine();
+                writer.println(message);
+
+                if (message.equalsIgnoreCase("exit"))
+                    break;
+
+                // ✅ อ่านทุกบรรทัดจาก server จนเจอ "END"
+                String responseLine;
+                while (!(responseLine = reader.readLine()).equals("END")) {
+                    System.out.println("Server: " + responseLine);
+                }
+            }
 
             socket.close();
-        } catch (UnknownHostException ex) {
-            System.out.println("Server ไม่พบ: " + ex.getMessage());
         } catch (IOException ex) {
-            System.out.println("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
 }
