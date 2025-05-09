@@ -37,10 +37,10 @@ public class Fish {
         if (this.isAlive) {
             switch (di) {
                 case "up":
-                    this.y -= 1;
+                    this.y += 1;
                     break;
                 case "down":
-                    this.y += 1;
+                    this.y -= 1;
                     break;
                 case "left":
                     this.x -= 1;
@@ -56,14 +56,13 @@ public class Fish {
         if (this.size > other.size) { // ใหญ่กว่ากินได้
             this.size += other.size / 6.0; // เราใหญ่ขึ้น
             other.isAlive = false; // อีกตัวตาย
-            return true; 
-        }
-        else if (this.size < other.size) { // เล็กกว่ากินไม่ได้
+            return true;
+        } else if (this.size < other.size) { // เล็กกว่ากินไม่ได้
             this.isAlive = false; // เราตาย
-            return false; 
-        } 
+            return false;
+        }
         this.isAlive = false; // เราตาย
         other.isAlive = false; // อีกตัวตาย
-        return false; 
+        return false;
     }
 }
