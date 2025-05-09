@@ -8,6 +8,7 @@ public class Client {
         int port = 1234;
 
         try (Socket socket = new Socket(host, port)) {
+
             Scanner scanner = new Scanner(System.in);
 
             InputStream input = socket.getInputStream();
