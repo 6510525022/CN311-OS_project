@@ -95,6 +95,7 @@ class ClientHandler extends Thread {
 
             String text;
             while ((text = reader.readLine()) != null) {
+                System.out.println("---------------------( " + text + " )---------------------");
                 int currentPhase = gameState.getGamePhase();
 
                 switch (currentPhase) {
@@ -122,7 +123,6 @@ class ClientHandler extends Thread {
                             gameState.setGamePhase(2); // เปลี่ยน phase แล้วทุก client เห็น
                             writer.println("เกมจบแล้ว");
                         }
-                        writer.println("END");
                         break;
 
                     case 2: // Result phase
