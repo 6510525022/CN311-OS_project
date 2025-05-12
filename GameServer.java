@@ -67,7 +67,7 @@ public class GameServer {
                     .append("; ");
         }
 
-        String data = "สถานะของปลา:" + sb.toString();
+        String data = "Fish:" + sb.toString();
         //ถ้า State ของปลาไม่เปลี่ยนแปลง ก็ไม่ต้องส่งข้อมูลไปให้ client
         if (currentFishState.equals(data)) return;
         currentFishState = data;

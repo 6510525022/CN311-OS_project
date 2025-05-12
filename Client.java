@@ -91,7 +91,14 @@ public class Client {
                     int newPhase = Integer.parseInt(responseLine.split(":")[1]);
                     updatePhaseFromServer(newPhase);
                 }
-                //if ;
+                if (responseLine.startsWith("fish:")) {
+                    String newStatus = responseLine.split(":")[1];
+                    updateFishFromServer(newStatus);
+                }
+                if (responseLine.startsWith("result:")) {
+                    String newStatus = responseLine.split(":")[1];
+                    updateResultFromServer(newStatus);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -109,6 +116,14 @@ public class Client {
         }
 
         frame.requestFocusInWindow(); 
+    }
+
+    private void updateFishFromServer(String Fish) {
+        
+    }
+
+    private void updateResultFromServer(String Result) {
+        
     }
 
     private void sendMove(String msg) {
