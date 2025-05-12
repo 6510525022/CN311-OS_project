@@ -40,10 +40,10 @@ public class Fish {
 
             switch (di) {
                 case "up":
-                    this.y += 1;
+                    this.y -= 1;
                     break;
                 case "down":
-                    this.y -= 1;
+                    this.y += 1;
                     break;
                 case "left":
                     this.x -= 1;
@@ -51,21 +51,21 @@ public class Fish {
                 case "right":
                     this.x += 1;
                     break;
-                case "up-right":
-                    this.x += 0.7071;
-                    this.y += 0.7071;
-                    break;
-                case "up-left":
-                    this.x -= 0.7071;
-                    this.y += 0.7071;
-                    break;
-                case "down-right":
+                case "upright":
                     this.x += 0.7071;
                     this.y -= 0.7071;
                     break;
-                case "down-left":
+                case "upleft":
                     this.x -= 0.7071;
                     this.y -= 0.7071;
+                    break;
+                case "downright":
+                    this.x += 0.7071;
+                    this.y += 0.7071;
+                    break;
+                case "downleft":
+                    this.x -= 0.7071;
+                    this.y += 0.7071;
                     break;
             }
         }

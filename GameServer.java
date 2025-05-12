@@ -142,7 +142,7 @@ class ClientHandler extends Thread {
                         // ถ้า client ส่งคำสั่งมาให้ server
                         Fish playerFish = GameServer.fishMap.get(socket);
                         if (playerFish != null && playerFish.isAlive) {
-                            if (List.of("up", "down", "left", "right", "up-right", "up-left", "down-right", "down-left").contains(text)) {
+                            if (List.of("up", "down", "left", "right", "upleft", "upright", "downleft", "downright").contains(text)) {
                                 playerFish.move(text);
                             }
                         }
