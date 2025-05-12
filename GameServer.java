@@ -38,7 +38,7 @@ public class GameServer {
                 System.out.println("มี Client ใหม่เชื่อมต่อ");
 
                 // สร้างปลาให้ client
-                Fish playerFish = new Fish(random(100, 500), random(100, 500), 50, "right", "player", true);
+                Fish playerFish = new Fish(random(0, 300), random(0, 300), 50, "right", "player", true);
                 fishMap.put(clientSocket, playerFish);
 
                 // สร้าง ClientHandler (Thread) สำหรับ client
