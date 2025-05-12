@@ -32,7 +32,7 @@ public class GameServer {
                 broadcastFishState();
             }, 0, 33, TimeUnit.MILLISECONDS); //30 per second
             
-            //รอ client เชื่อมต่อที่ ServerSocket
+            // รอ client เชื่อมต่อที่ ServerSocket
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("มี Client ใหม่เชื่อมต่อ");
@@ -72,7 +72,7 @@ public class GameServer {
         if (currentFishState.equals(data)) return;
         currentFishState = data;
         for (ClientHandler h : handlers) {
-            h.send(currentFishState);
+            //h.send(currentFishState);
         }
         System.err.println(currentFishState);
     }
@@ -80,6 +80,12 @@ public class GameServer {
     // method สุ่ม สำหรับใช้สุ่มจุดเกิด
     public static int random(int min, int max) {
         return min + (int) (Math.random() * (max - min));
+    }
+
+    public static void broadcastPhase(int currentPhase) {
+        for (ClientHandler h : handlers) {
+            h.send("phase:" + currentPhase);
+        }
     }
 }
 
@@ -106,20 +112,27 @@ class ClientHandler extends Thread {
         try (InputStream input = socket.getInputStream(); BufferedReader reader = new BufferedReader(new InputStreamReader(input)); OutputStream output = socket.getOutputStream();) 
         {
             writer = new PrintWriter(output, true);
-            writer.println("เชื่อมต่อกับ Server สำเร็จ");
+            //writer.println("เชื่อมต่อกับ Server สำเร็จ");
+            int currentPhase = gameState.getGamePhase();
+            System.out.println("____SERVER SEND____, phase:" + currentPhase);
+            writer.println("phase:" + currentPhase);
+            writer.println("END:");
 
             String text;
             while ((text = reader.readLine()) != null) {
-                int currentPhase = gameState.getGamePhase();
+                currentPhase = gameState.getGamePhase();
                 switch (currentPhase) {
                     case 0: // Lobby phase
                         // ถ้า client ส่งคำสั่งมาให้ server
                         if (text.equals("start")) {
                             gameState.setGamePhase(1); // Change phase เป็น in-game
-                            writer.println("เริ่มเกมแล้ว");
-                            writer.println("In-game phase {up, down, left, right, next}");
+                            GameServer.broadcastPhase(1);
+                            System.err.println("เริ่มเกมแล้ว In-game phase {up, down, left, right, next}");
+                            //writer.println("เริ่มเกมแล้ว");
+                            //writer.println("In-game phase {up, down, left, right, next}");
                         }else{
-                            writer.println("Lobby phase {start}");
+                            System.err.println("Lobby phase {start}");
+                            //writer.println("Lobby phase {start}");
                         }
                         break;
 
@@ -134,25 +147,31 @@ class ClientHandler extends Thread {
 
                         if (text.equals("next")) { // จบเกม
                             gameState.setGamePhase(2); // เปลี่ยน phase แล้วทุก client เห็น
-                            writer.println("เกมจบแล้ว");
-                            writer.println("result phase {next}");
+                            GameServer.broadcastPhase(2);
+                            System.err.println("เกมจบแล้ว result phase {next}");
+                            //writer.println("เกมจบแล้ว");
+                            //writer.println("result phase {next}");
                         } else {
-                            writer.println("In-game phase {up, down, left, right, next}");
+                            System.err.println("In-game phase {up, down, left, right, next}");
+                            //writer.println("In-game phase {up, down, left, right, next}");
                         }
                         break;
 
                     case 2: // Result phase
                         if (text.equals("next")) {
                             gameState.setGamePhase(0); // Return to Lobby phase
-                            writer.println("กลับไป Lobby แล้ว");
-                            writer.println("Lobby phase {start}");
+                            GameServer.broadcastPhase(0);
+                            System.err.println("กลับไป Lobby phase {start}");
+                            //writer.println("กลับไป Lobby แล้ว");
+                            //writer.println("Lobby phase {start}");
                         } else {
-                            writer.println("result phase {next}");
+                            System.err.println("result phase {next}");
+                            //writer.println("result phase {next}");
                         }
                         break;
                 }
             
-                writer.println("END");
+                //writer.println("END");
             } 
         
             // ปิดการเชื่อมต่อ
@@ -161,5 +180,4 @@ class ClientHandler extends Thread {
             e.printStackTrace();
         }
     }
-
 }
