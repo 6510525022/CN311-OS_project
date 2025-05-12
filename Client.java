@@ -3,7 +3,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.net.*;
-import java.nio.channels.spi.SelectorProvider;
 import java.util.*;
 
 public class Client {
@@ -17,6 +16,9 @@ public class Client {
 
     private HashMap<Integer, Fish> fishHashMap = new HashMap<>();
     private int phase = 0;
+
+    // ใช้สำหรับตรวจสอบว่าปุ่มไหนถูกกดค้างอยู่ เพื่อให้เคลื่อนที่แบบเฉียงได้
+    private Set<Integer> pressedKeys = new HashSet<>();
 
     public static void main(String[] args) {
         String host = "localhost";
@@ -69,19 +71,9 @@ public class Client {
         buttonPanel.add(controlButton);
         frame.add(buttonPanel, BorderLayout.SOUTH);
 
-        frame.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (phase != 1)
-                    return;
-                switch (e.getKeyCode()) {
-                    case KeyEvent.VK_W -> sendMove("up");
-                    case KeyEvent.VK_S -> sendMove("down");
-                    case KeyEvent.VK_A -> sendMove("left");
-                    case KeyEvent.VK_D -> sendMove("right");
-                }
-            }
-        });
+        // ใช้ Key Bindings เพื่อรองรับการกดหลายปุ่มพร้อมกัน
+        setupKeyBindings(frame.getRootPane());
+        setupMovementTimer();
 
         frame.setFocusable(true);
         frame.requestFocusInWindow();
@@ -131,9 +123,7 @@ public class Client {
                                 case "size":
                                     size = Float.parseFloat(value);
                                     break;
-
                             }
-
                         }
 
                         if (!fishHashMap.containsKey(id)) {
@@ -196,5 +186,57 @@ public class Client {
 
     private void sendMove(String msg) {
         writer.println(msg);
+    }
+
+    // function keyBinding สำหรับการจับคีย์
+    private void setupKeyBindings(JComponent component) {
+        InputMap inputMap = component.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actionMap = component.getActionMap();
+
+        int[] keys = { KeyEvent.VK_W, KeyEvent.VK_A, KeyEvent.VK_S, KeyEvent.VK_D };
+
+        for (int keyCode : keys) {
+            String keyPressed = "pressed " + keyCode;
+            String keyReleased = "released " + keyCode;
+
+            inputMap.put(KeyStroke.getKeyStroke(keyCode, 0, false), keyPressed);
+            inputMap.put(KeyStroke.getKeyStroke(keyCode, 0, true), keyReleased);
+
+            actionMap.put(keyPressed, new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    pressedKeys.add(keyCode);
+                }
+            });
+
+            actionMap.put(keyReleased, new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    pressedKeys.remove(keyCode);
+                }
+            });
+        }
+    }
+
+    // ส่งการกดคีย์ทุกๆ 20 ms
+    private void setupMovementTimer() {
+        javax.swing.Timer movementTimer = new javax.swing.Timer(20, e -> {
+            if (phase != 1)
+                return;
+
+            if (pressedKeys.contains(KeyEvent.VK_W)) {
+                sendMove("up");
+            }
+            if (pressedKeys.contains(KeyEvent.VK_S)) {
+                sendMove("down");
+            }
+            if (pressedKeys.contains(KeyEvent.VK_A)) {
+                sendMove("left");
+            }
+            if (pressedKeys.contains(KeyEvent.VK_D)) {
+                sendMove("right");
+            }
+        });
+        movementTimer.start();
     }
 }

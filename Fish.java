@@ -33,21 +33,42 @@ public class Fish {
     }
 
     // ฟังก์ชันสำหรับการเคลื่อนไหวของปลา
+    // ฟังก์ชันสำหรับการเคลื่อนไหวของปลา
     public void move(String di) {
         if (this.isAlive) {
+            int step = 5;
+
             switch (di) {
-                case "up":
-                    this.y -= 5;
-                    break;
-                case "down":
-                    this.y += 5;
-                    break;
-                case "left":
-                    this.x -= 5;
-                    break;
-                case "right":
-                    this.x += 5;
-                    break;
+                case "up" -> this.y -= step;
+                case "down" -> this.y += step;
+                case "left" -> {
+                    this.x -= step;
+                    this.direction = "left";
+                }
+                case "right" -> {
+                    this.x += step;
+                    this.direction = "right";
+                }
+                case "upleft" -> {
+                    this.x -= step;
+                    this.y -= step;
+                    this.direction = "left";
+                }
+                case "upright" -> {
+                    this.x += step;
+                    this.y -= step;
+                    this.direction = "right";
+                }
+                case "downleft" -> {
+                    this.x -= step;
+                    this.y += step;
+                    this.direction = "left";
+                }
+                case "downright" -> {
+                    this.x += step;
+                    this.y += step;
+                    this.direction = "right";
+                }
             }
         }
     }

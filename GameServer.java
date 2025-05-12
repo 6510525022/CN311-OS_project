@@ -142,7 +142,8 @@ class ClientHandler extends Thread {
                         // ถ้า client ส่งคำสั่งมาให้ server
                         Fish playerFish = GameServer.fishMap.get(socket);
                         if (playerFish != null && playerFish.isAlive) {
-                            if (List.of("up", "down", "left", "right").contains(text)) {
+                            if (List.of("up", "down", "left", "right", "upleft", "upright", "downleft", "downright")
+                                    .contains(text)) {
                                 playerFish.move(text);
                             }
                         }
@@ -154,7 +155,8 @@ class ClientHandler extends Thread {
                             // writer.println("เกมจบแล้ว");
                             // writer.println("result phase {next}");
                         } else {
-                            System.err.println("In-game phase {up, down, left, right, next}");
+                            System.err.println(
+                                    "In-game phase {up, down, left, right, upleft, upright, downleft, downright, next}");
                             // writer.println("In-game phase {up, down, left, right, next}");
                         }
                         break;

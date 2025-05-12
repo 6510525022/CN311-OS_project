@@ -7,6 +7,9 @@ public class FishPanel extends JPanel {
 
     public FishPanel(HashMap<Integer, Fish> fishHashMap) {
         this.fishHashMap = fishHashMap;
+
+        Timer animationTimer = new Timer(20, e -> repaint());
+        animationTimer.start();
     }
 
     @Override
