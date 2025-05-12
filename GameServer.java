@@ -30,7 +30,7 @@ public class GameServer {
             ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
             scheduler.scheduleAtFixedRate(() -> {
                 broadcastFishState();
-            }, 0, 33, TimeUnit.MILLISECONDS); //30 per second
+            }, 0, 16, TimeUnit.MILLISECONDS); //60 per second
             
             // รอ client เชื่อมต่อที่ ServerSocket
             while (true) {
@@ -72,7 +72,7 @@ public class GameServer {
         if (currentFishState.equals(data)) return;
         currentFishState = data;
         for (ClientHandler h : handlers) {
-            //h.send(currentFishState);
+            h.send(currentFishState);
         }
         System.err.println(currentFishState);
     }
@@ -140,7 +140,7 @@ class ClientHandler extends Thread {
                         // ถ้า client ส่งคำสั่งมาให้ server
                         Fish playerFish = GameServer.fishMap.get(socket);
                         if (playerFish != null && playerFish.isAlive) {
-                            if (List.of("up", "down", "left", "right").contains(text)) {
+                            if (List.of("up", "down", "left", "right", "up-right", "up-left", "down-right", "down-left").contains(text)) {
                                 playerFish.move(text);
                             }
                         }

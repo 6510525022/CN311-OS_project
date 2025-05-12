@@ -63,17 +63,47 @@ public class Client {
         buttonPanel.add(controlButton);
         frame.add(buttonPanel, BorderLayout.SOUTH);
 
+        Set<Integer> pressedKeys = new HashSet<>();
+
         frame.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (phase != 1) return;
 
-                switch (e.getKeyCode()) {
-                    case KeyEvent.VK_W -> sendMove("up");
-                    case KeyEvent.VK_S -> sendMove("down");
-                    case KeyEvent.VK_A -> sendMove("left");
-                    case KeyEvent.VK_D -> sendMove("right");
-                }
+                pressedKeys.add(e.getKeyCode());
+                sendMove(resolveDirection());
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                pressedKeys.remove(e.getKeyCode());
+            }
+
+            private String resolveDirection() {
+                boolean up = pressedKeys.contains(KeyEvent.VK_W);
+                boolean down = pressedKeys.contains(KeyEvent.VK_S);
+                boolean left = pressedKeys.contains(KeyEvent.VK_A);
+                boolean right = pressedKeys.contains(KeyEvent.VK_D);
+
+                if (up && down && right && left) return "";
+                if (up && right && left) return "up";
+                if (down && right && left) return "down";
+                if (up && down && left) return "left";
+                if (down && down && right) return "right";
+
+                if (left && right) return ""; 
+                if (up && down) return "";
+                if (up && right) return "up-right";
+                if (up && left) return "up-left";
+                if (down && right) return "down-right";
+                if (down && left) return "down-left";
+
+                if (up) return "up";
+                if (down) return "down";
+                if (left) return "left";
+                if (right) return "right";
+
+                return "";
             }
         });
 
