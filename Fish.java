@@ -1,7 +1,10 @@
 public class Fish {
-    float x, y, size;
-    String direction, type;
-    boolean isPlayer, isAlive;
+    final static double step = 6, stepCheng = 1.2;
+    public double x, y, size, speed = 1;
+    public String direction, type;
+    public boolean isPlayer, isAlive;
+    private static final int WIDTH = 800;
+    private static final int HEIGHT = 600;
 
     Fish(float x, float y, float size, String direction, String type, boolean isPlayer) {
         this.x = x;
@@ -33,46 +36,69 @@ public class Fish {
     }
 
     // ฟังก์ชันสำหรับการเคลื่อนไหวของปลา
-    // ฟังก์ชันสำหรับการเคลื่อนไหวของปลา
     public void move(String di) {
         if (this.isAlive) {
-            int step = 5;
-
             switch (di) {
                 case "up":
-                    this.y -= 1;
+                    if (!(this.y < -size / 2)) {
+                        this.y -= step * speed;
+                        }
                     break;
                 case "down":
-                    this.y += 1;
+                    if (!(this.y > HEIGHT - size * 2)) {
+                        this.y += step * speed;
+                        }
                     break;
                 case "left":
-                    this.x -= 1;
+                    if (!(this.x < -size / 2) || !this.isPlayer) {
+                        if (this.x < 0 -WIDTH*0.5) this.isAlive = false;
+                        this.x -= step * speed;
+                        }
                     break;
                 case "right":
-                    this.x += 1;
+                    if (!(this.x > WIDTH - size) || !this.isPlayer) {
+                        if (this.x > WIDTH*1.5) this.isAlive = false;
+                        this.x += step * speed;
+                        }
                     break;
                 case "upright":
-                    this.x += 0.7071;
-                    this.y -= 0.7071;
+                    if (!(this.x > WIDTH - size)) {
+                        this.x += stepCheng * speed;
+                        }
+                    if (!(this.x > WIDTH + size / 2)) {
+                        this.y -= stepCheng * 0.75 * speed;
+                        }
                     break;
                 case "upleft":
-                    this.x -= 0.7071;
-                    this.y -= 0.7071;
+                    if (!(this.x < -size / 2)) {
+                        this.x -= stepCheng * speed;
+                        }
+                    if (!(this.y < -size / 2)) {
+                        this.y -= stepCheng * 0.75 * speed;
+                        }
                     break;
                 case "downright":
-                    this.x += 0.7071;
-                    this.y += 0.7071;
+                    if (!(this.x > WIDTH - size)) {
+                        this.x += stepCheng * speed;
+                        }
+                    if (!(this.y > HEIGHT - size * 2)) {
+                        this.y += stepCheng * 0.8 * speed;
+                        }
                     break;
                 case "downleft":
-                    this.x -= 0.7071;
-                    this.y += 0.7071;
+                    if (!(this.x < -size / 2)) {
+                        this.x -= stepCheng * speed;
+                        }
+                    if (!(this.y > HEIGHT - size * 2)) {
+                        this.y += stepCheng * 0.8 * speed;
+                        }
                     break;
             }
         }
     }
 
     // ฟังก์ชันสำหรับการกินปลาอื่น
-    private boolean eat(Fish other) {
+    public boolean eat(Fish other) {
         if (this.size > other.size) { // ใหญ่กว่ากินได้
             this.size += other.size / 4.0; // เราใหญ่ขึ้น
             other.isAlive = false; // อีกตัวตาย
@@ -85,4 +111,18 @@ public class Fish {
         other.isAlive = false; // อีกตัวตาย
         return false;
     }
+
+    public static Fish spawnEnemyFish() {
+        boolean spawnLeft = Math.random() < 0.5;
+        int y = (int) (Math.random() * 600 + 100);
+        int x = spawnLeft ? -50 : 800; 
+        float size = (float) (Math.random() * 125.0 + 5.0); 
+        String direction = spawnLeft ? "right" : "left";
+        float speed = (float) (0.6 + (Math.random()-0.5) / 2.5);
+
+        Fish f = new Fish(x, y, size, direction, "enemy");
+        f.speed = speed;
+    return f;
+}
+
 }

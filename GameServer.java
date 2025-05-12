@@ -5,6 +5,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class GameServer {
+    private static final int WIDTH = 800;
+    private static final int HEIGHT = 600;
 
     // setup variable
     final static int PORT = 1234;
@@ -26,19 +28,26 @@ public class GameServer {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Server รันอยู่ที่พอร์ต " + PORT);
 
-            // Thread สำหรับส่ง FishState ให้ client ทุกคนทุก ๆ 33ms
+            // Thread สำหรับส่ง FishState ให้ client ทุกคนทุก ๆ 16ms
             ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
             scheduler.scheduleAtFixedRate(() -> {
-                broadcastFishState();
+                broadcastFishState(); // ขยับ
+                checkFishCollisions(); // ชนหมาย
             }, 0, 16, TimeUnit.MILLISECONDS); //60 per second
-            
+
+            ScheduledExecutorService spawner = Executors.newScheduledThreadPool(1);
+            spawner.scheduleAtFixedRate(() -> {
+                Fish enemy = Fish.spawnEnemyFish();
+                fishMap.put(new Socket(), enemy); // <-- ต้องเปลี่ยนไปใช้ ID จริง
+            }, 0, 1300, TimeUnit.MILLISECONDS);
+
             // รอ client เชื่อมต่อที่ ServerSocket
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("มี Client ใหม่เชื่อมต่อ");
 
                 // สร้างปลาให้ client
-                Fish playerFish = new Fish(random(0, 300), random(0, 300), 50, "right", "player", true);
+                Fish playerFish = new Fish(random(200, 600), random(300, 400), 25, "right", "player", true);
                 fishMap.put(clientSocket, playerFish);
 
                 // สร้าง ClientHandler (Thread) สำหรับ client
@@ -53,11 +62,22 @@ public class GameServer {
 
     // ส่งสถานะปลาให้ client ทุกคน
     public static void broadcastFishState() {
+        List<Socket> toRemove = new ArrayList<>();
 
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<Socket, Fish> entry : fishMap.entrySet()) {
             Socket socket = entry.getKey();
             Fish f = entry.getValue();
+
+            // ปลา bot ว่าย เอง
+            if(!f.isPlayer) {
+                f.move(f.direction);
+            }
+
+            if (!f.isPlayer && (!f.isAlive)) {
+                toRemove.add(socket);
+                continue; // ไม่ต้องส่งสถานะตัวที่ตายหรือหลุดขอบ
+            }
 
             sb.append("id:").append(socket.hashCode())
                     .append(", x:").append(f.x)
@@ -65,6 +85,10 @@ public class GameServer {
                     .append(", size:").append(f.size)
                     .append(", isAlive:").append(f.isAlive)
                     .append("; ");
+        }
+
+        for (Socket s : toRemove) {
+            fishMap.remove(s);
         }
 
         String data = "Fish:" + sb.toString();
@@ -87,6 +111,51 @@ public class GameServer {
         for (ClientHandler h : handlers) {
             h.send("phase:" + currentPhase);
         }
+    }
+
+    public static void checkFishCollisions() {
+        List<Socket> toRemove = new ArrayList<>();
+
+        for (Map.Entry<Socket, Fish> entry1 : fishMap.entrySet()) {
+            Fish fish1 = entry1.getValue();
+            Socket socket1 = entry1.getKey();
+
+            // ข้ามที่ไม่ใช้ผู้เล่น
+            if (!fish1.isPlayer) continue;
+
+            // ข้ามปลาที่ตายแล้ว
+            if (!fish1.isAlive) continue;
+
+            for (Map.Entry<Socket, Fish> entry2 : fishMap.entrySet()) {
+                Fish fish2 = entry2.getValue();
+                Socket socket2 = entry2.getKey();
+
+                // ข้ามที่เป็นผู้เล่น (ไม่ใช่ตัวเองกับเพื่อน)
+                if (fish2.isPlayer) continue;
+
+                // ถ้าอยู่ใกล้กันพอจะชนกัน
+                if (isColliding(fish1, fish2)) {
+                    fish1.eat(fish2);
+                }
+
+                if(!fish1.isAlive)
+                    toRemove.add(socket1);
+                if(!fish2.isAlive)
+                    toRemove.add(socket2);
+            }
+        }
+
+        for (Socket s : toRemove) {
+            fishMap.remove(s);
+        }
+    }
+
+    public static boolean isColliding(Fish a, Fish b) {
+        double dx = a.x - b.x;
+        double dy = a.y - b.y;
+        double distance = Math.sqrt(dx * dx + dy * dy);
+        double collisionDistance = (a.size + b.size) / 2.0; // ปรับตามลักษณะการแสดงผล
+        return distance < collisionDistance;
     }
 }
 

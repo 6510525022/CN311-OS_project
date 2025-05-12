@@ -16,6 +16,8 @@ public class Client {
 
     private HashMap<Integer, Fish> fishHashMap = new HashMap<>();
     private int phase = 0;
+    private static final int WIDTH = 800;
+    private static final int HEIGHT = 600;
 
     // ใช้สำหรับตรวจสอบว่าปุ่มไหนถูกกดค้างอยู่ เพื่อให้เคลื่อนที่แบบเฉียงได้
     private Set<Integer> pressedKeys = new HashSet<>();
@@ -41,7 +43,7 @@ public class Client {
 
     private void setupGUI() {
         frame = new JFrame("Fish Game Client");
-        frame.setSize(800, 600);
+        frame.setSize(WIDTH, HEIGHT);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
 
