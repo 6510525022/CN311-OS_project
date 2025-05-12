@@ -3,17 +3,17 @@ public class Fish {
     String direction, type;
     boolean isPlayer, isAlive;
 
-    Fish(int x, int y, int size, String direction, String type, boolean isPlayer) {
-        this.x = x; 
-        this.y = y; 
+    Fish(float x, float y, float size, String direction, String type, boolean isPlayer) {
+        this.x = x;
+        this.y = y;
         this.direction = direction;
-        this.size = size; 
+        this.size = size;
         this.type = type;
         this.isPlayer = isPlayer;
         this.isAlive = true;
     }
 
-    Fish(int x, int y, int size, String direction, String type) {
+    Fish(float x, float y, float size, String direction, String type) {
         this(x, y, size, direction, type, false);
     }
 
@@ -37,16 +37,16 @@ public class Fish {
         if (this.isAlive) {
             switch (di) {
                 case "up":
-                    this.y += 1;
+                    this.y -= 5;
                     break;
                 case "down":
-                    this.y -= 1;
+                    this.y += 5;
                     break;
                 case "left":
-                    this.x -= 1;
+                    this.x -= 5;
                     break;
                 case "right":
-                    this.x += 1;
+                    this.x += 5;
                     break;
             }
         }

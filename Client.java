@@ -13,7 +13,9 @@ public class Client {
     private JFrame frame;
     private JPanel buttonPanel;
     private JButton controlButton;
+    private FishPanel fishPanel;
 
+    private HashMap<Integer, Fish> fishHashMap = new HashMap<>();
     private int phase = 0;
 
     public static void main(String[] args) {
@@ -37,9 +39,13 @@ public class Client {
 
     private void setupGUI() {
         frame = new JFrame("Fish Game Client");
-        frame.setSize(400, 300);
+        frame.setSize(800, 600);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
+
+        // สร้างปลา
+        fishPanel = new FishPanel(fishHashMap);
+        frame.add(fishPanel, BorderLayout.CENTER);
 
         buttonPanel = new JPanel();
         controlButton = new JButton("Start");
@@ -66,8 +72,8 @@ public class Client {
         frame.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (phase != 1) return;
-
+                if (phase != 1)
+                    return;
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_W -> sendMove("up");
                     case KeyEvent.VK_S -> sendMove("down");
@@ -91,10 +97,54 @@ public class Client {
                     int newPhase = Integer.parseInt(responseLine.split(":")[1]);
                     updatePhaseFromServer(newPhase);
                 }
-                if (responseLine.startsWith("fish:")) {
-                    String newStatus = responseLine.split(":")[1];
-                    updateFishFromServer(newStatus);
+                if (responseLine.startsWith("Fish:")) {
+                    String data = responseLine.substring("Fish:".length());
+                    String[] fishEntries = data.split(";");
+
+                    for (String fishEntry : fishEntries) {
+                        fishEntry = fishEntry.trim();
+                        if (fishEntry.isEmpty())
+                            continue;
+
+                        String[] attributes = fishEntry.split(", ");
+                        int id = -1;
+                        float x = 0, y = 0, size = 0;
+
+                        for (String attr : attributes) {
+                            String[] keyValue = attr.split(":");
+                            if (keyValue.length != 2)
+                                continue;
+
+                            String key = keyValue[0];
+                            String value = keyValue[1];
+
+                            switch (key) {
+                                case "id":
+                                    id = Integer.parseInt(value);
+                                    break;
+                                case "x":
+                                    x = Float.parseFloat(value);
+                                    break;
+                                case "y":
+                                    y = Float.parseFloat(value);
+                                    break;
+                                case "size":
+                                    size = Float.parseFloat(value);
+                                    break;
+
+                            }
+
+                        }
+
+                        if (!fishHashMap.containsKey(id)) {
+                            Fish newFish = new Fish(x, y, size, "right", "normal", true);
+                            fishHashMap.put(id, newFish);
+                        } else {
+                            updateFishFromServer(id, x, y, size);
+                        }
+                    }
                 }
+
                 if (responseLine.startsWith("result:")) {
                     String newStatus = responseLine.split(":")[1];
                     updateResultFromServer(newStatus);
@@ -115,15 +165,33 @@ public class Client {
             case 2 -> controlButton.setText("Lobby");
         }
 
-        frame.requestFocusInWindow(); 
+        frame.requestFocusInWindow();
     }
 
-    private void updateFishFromServer(String Fish) {
-        
+    private void updateFishFromServer(int id, float newX, float newY, float newSize) {
+        Fish fish = fishHashMap.get(id);
+        if (fish == null)
+            return;
+
+        if (!fish.isPlayer) {
+            return;
+        }
+
+        if (fish.x != newX) {
+            fish.direction = newX > fish.x ? "right" : "left";
+            fish.x = newX;
+        }
+
+        if (fish.y != newY)
+            fish.y = newY;
+        if (fish.size != newSize)
+            fish.size = newSize;
+
+        fishPanel.repaint();
     }
 
     private void updateResultFromServer(String Result) {
-        
+
     }
 
     private void sendMove(String msg) {
