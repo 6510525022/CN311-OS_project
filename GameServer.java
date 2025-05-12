@@ -31,8 +31,8 @@ public class GameServer {
             // Thread สำหรับส่ง FishState ให้ client ทุกคนทุก ๆ 16ms
             ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
             scheduler.scheduleAtFixedRate(() -> {
-                broadcastFishState(); // ขยับ
                 checkFishCollisions(); // ชนหมาย
+                broadcastFishState(); // ขยับ
             }, 0, 16, TimeUnit.MILLISECONDS); //60 per second
 
             ScheduledExecutorService spawner = Executors.newScheduledThreadPool(1);
