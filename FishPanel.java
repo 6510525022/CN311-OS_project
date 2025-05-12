@@ -25,11 +25,11 @@ public class FishPanel extends JPanel {
                 int y = (int) fish.y;
 
                 // วาดตัวปลา
-                g.setColor(Color.BLUE);
+                g.setColor(Color.PINK);
                 g.fillOval(x, y, fishWidth, fishHeight);
 
                 // วาดหางปลา
-                g.setColor(Color.CYAN);
+                g.setColor(Color.PINK);
                 int[] tailX, tailY;
 
                 if ("right".equals(fish.direction)) {
