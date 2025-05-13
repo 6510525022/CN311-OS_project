@@ -10,7 +10,8 @@ public class GameServer {
 
     // setup variable
     final static int PORT = 1234;
-    static String currentFishState = "";
+    static int playerCount = 0;
+    static GameState gameState;
 
     // hashmap เก็บปลาของ client (รองรับการทำงานหลาย thread)
     public static Map<Socket, Fish> fishMap = new ConcurrentHashMap<>();
@@ -22,7 +23,7 @@ public class GameServer {
 
     public static void main(String[] args) {
         // สร้าง GameState เพื่อเริ่มต้นแชร์สถานะเกมให้กับ client
-        GameState gameState = new GameState();
+        gameState = new GameState();
 
         // สร้าง ServerSocket
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
@@ -31,24 +32,40 @@ public class GameServer {
             // Thread สำหรับส่ง FishState ให้ client ทุกคนทุก ๆ 16ms
             ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
             scheduler.scheduleAtFixedRate(() -> {
+                if (gameState.getGamePhase() != 1) return; // ถ้าไม่อยู่ใน phase in-game ให้ไม่ทำงาน
                 checkFishCollisions(); // ชนหมาย
                 broadcastFishState(); // ขยับ
+                checkIfAllPlayersAreDead(); // เช็คว่าผู้เล่นตายหมดหรือยัง
             }, 0, 16, TimeUnit.MILLISECONDS); //60 per second
 
             ScheduledExecutorService spawner = Executors.newScheduledThreadPool(1);
             spawner.scheduleAtFixedRate(() -> {
-                Fish enemy = Fish.spawnEnemyFish();
+                if (gameState.getGamePhase() != 1) return; // ถ้าไม่อยู่ใน phase in-game ให้ไม่ทำงาน
+                float avgSize = (float) fishMap.values().stream()
+                    .filter(fish -> fish.isAlive)
+                    .mapToDouble(fish -> fish.size)
+                    .average()
+                    .orElse(25.0); // หากไม่มีปลาผู้เล่นเหลืออยู่
+                float avgPlayerSize = (float) fishMap.values().stream()
+                    .filter(fish -> fish.isPlayer)
+                    .filter(fish -> fish.isAlive)
+                    .mapToDouble(fish -> fish.size)
+                    .average()
+                    .orElse(25.0); // หากไม่มีปลาผู้เล่นเหลืออยู่
+                float avgY = (float) fishMap.values().stream()
+                    .filter(fish -> fish.isAlive)
+                    .mapToDouble(fish -> fish.y)
+                    .average()
+                    .orElse(300.0); 
+                Fish enemy = Fish.spawnEnemyFish(avgPlayerSize, avgSize, avgY);
                 fishMap.put(new Socket(), enemy); // <-- ต้องเปลี่ยนไปใช้ ID จริง
-            }, 0, 1300, TimeUnit.MILLISECONDS);
+            }, 0, 1200*(playerCount+1), TimeUnit.MILLISECONDS);
 
             // รอ client เชื่อมต่อที่ ServerSocket
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("มี Client ใหม่เชื่อมต่อ");
-
-                // สร้างปลาให้ client
-                Fish playerFish = new Fish(random(200, 600), random(300, 400), 25, "right", "player", true);
-                fishMap.put(clientSocket, playerFish);
+                playerCount++;
 
                 // สร้าง ClientHandler (Thread) สำหรับ client
                 ClientHandler clientHandler = new ClientHandler(clientSocket, gameState);
@@ -74,7 +91,7 @@ public class GameServer {
                 f.move(f.direction);
             }
 
-            if (!f.isPlayer && (!f.isAlive)) {
+            if (!f.isAlive) {
                 toRemove.add(socket);
                 continue; // ไม่ต้องส่งสถานะตัวที่ตายหรือหลุดขอบ
             }
@@ -92,10 +109,7 @@ public class GameServer {
         }
 
         String data = "Fish:" + sb.toString();
-        // ถ้า State ของปลาไม่เปลี่ยนแปลง ก็ไม่ต้องส่งข้อมูลไปให้ client
-        if (currentFishState.equals(data))
-            return;
-        currentFishState = data;
+        String currentFishState = data;
         for (ClientHandler h : handlers) {
             h.send(currentFishState);
         }
@@ -110,6 +124,13 @@ public class GameServer {
     public static void broadcastPhase(int currentPhase) {
         for (ClientHandler h : handlers) {
             h.send("phase:" + currentPhase);
+        
+            if (currentPhase == 1) {
+                if (GameServer.fishMap.get(h.socket) == null) {
+                    Fish playerFish = new Fish(GameServer.random(200, 600), GameServer.random(300, 400), 25, "right", "player", true);
+                    GameServer.fishMap.put(h.socket, playerFish);
+                }
+            }    
         }
     }
 
@@ -157,11 +178,23 @@ public class GameServer {
         double collisionDistance = (a.size + b.size) / 2.0; // ปรับตามลักษณะการแสดงผล
         return distance < collisionDistance;
     }
+
+    private static void checkIfAllPlayersAreDead() {
+        boolean anyAlive = fishMap.values().stream()
+            .anyMatch(fish -> fish.isPlayer && fish.isAlive);
+
+        if (!anyAlive) {
+            System.out.println("All players are dead. Moving to next phase.");
+            gameState.setGamePhase(2);
+            broadcastPhase(2); // Change phase เป็น Result phase
+        }
+    }
+
 }
 
 class ClientHandler extends Thread {
 
-    private Socket socket;
+    protected  Socket socket;
     private GameState gameState;
     private PrintWriter writer;
 
@@ -179,12 +212,13 @@ class ClientHandler extends Thread {
 
     // ใน ClientHandler
     public void run() {
+        int currentPhase = gameState.getGamePhase();
+
         try (InputStream input = socket.getInputStream();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(input));
                 OutputStream output = socket.getOutputStream();) {
             writer = new PrintWriter(output, true);
             // writer.println("เชื่อมต่อกับ Server สำเร็จ");
-            int currentPhase = gameState.getGamePhase();
             System.out.println("____SERVER SEND____, phase:" + currentPhase);
             writer.println("phase:" + currentPhase);
             writer.println("END:");
@@ -197,6 +231,7 @@ class ClientHandler extends Thread {
                         // ถ้า client ส่งคำสั่งมาให้ server
                         if (text.equals("start")) {
                             gameState.setGamePhase(1); // Change phase เป็น in-game
+                            GameServer.fishMap = new ConcurrentHashMap<>(); // reset fishMap
                             GameServer.broadcastPhase(1);
                             System.err.println("เริ่มเกมแล้ว In-game phase {up, down, left, right, next}");
                             // writer.println("เริ่มเกมแล้ว");

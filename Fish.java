@@ -45,20 +45,20 @@ public class Fish {
                         }
                     break;
                 case "down":
-                    if (!(this.y > HEIGHT - size * 2)) {
+                    if (!(this.y > HEIGHT - size / 2 - 75)) {
                         this.y += step * speed;
                         }
                     break;
                 case "left":
                     if (!(this.x < -size / 2) || !this.isPlayer) {
                         if (this.x < 0 -WIDTH*0.5) this.isAlive = false;
-                        this.x -= step * speed;
+                        this.x -= step * 1.10 * speed;
                         }
                     break;
                 case "right":
                     if (!(this.x > WIDTH - size) || !this.isPlayer) {
                         if (this.x > WIDTH*1.5) this.isAlive = false;
-                        this.x += step * speed;
+                        this.x += step * 1.10 * speed;
                         }
                     break;
                 case "upright":
@@ -81,7 +81,7 @@ public class Fish {
                     if (!(this.x > WIDTH - size)) {
                         this.x += stepCheng * speed;
                         }
-                    if (!(this.y > HEIGHT - size * 2)) {
+                    if (!(this.y > HEIGHT - size / 2 - 75)) {
                         this.y += stepCheng * 0.8 * speed;
                         }
                     break;
@@ -89,7 +89,7 @@ public class Fish {
                     if (!(this.x < -size / 2)) {
                         this.x -= stepCheng * speed;
                         }
-                    if (!(this.y > HEIGHT - size * 2)) {
+                    if (!(this.y > HEIGHT - size / 2 - 75)) {
                         this.y += stepCheng * 0.8 * speed;
                         }
                     break;
@@ -100,7 +100,8 @@ public class Fish {
     // ฟังก์ชันสำหรับการกินปลาอื่น
     public boolean eat(Fish other) {
         if (this.size > other.size) { // ใหญ่กว่ากินได้
-            this.size += other.size / 4.0; // เราใหญ่ขึ้น
+            this.size += (Math.sqrt(other.size) / 5.0) + ((other.size / this.size) * 1.1); // เราใหญ่ขึ้น
+            this.speed = (-0.0008 * this.size) + 1.12; // size 25 -> 1.10, size 150 -> 1.0
             other.isAlive = false; // อีกตัวตาย
             return true;
         } else if (this.size < other.size) { // เล็กกว่ากินไม่ได้
@@ -112,13 +113,32 @@ public class Fish {
         return false;
     }
 
-    public static Fish spawnEnemyFish() {
+    public static Fish spawnEnemyFish(float avgPlayerSize, float avgSize, float avgY) {
         boolean spawnLeft = Math.random() < 0.5;
-        int y = (int) (Math.random() * 600 + 100);
-        int x = spawnLeft ? -50 : 800; 
-        float size = (float) (Math.random() * 125.0 + 5.0); 
+        float size;
+        if (avgPlayerSize < avgSize){
+            if (avgPlayerSize < 50){
+                size = (float) (Math.random() * (avgPlayerSize*1.5) + 4.0); // 5 - 1.5xavgSize
+            } else  {
+                size = (float) (Math.random() * (avgPlayerSize*3) + 4.0); // 5 - 3xavgSize
+            }
+        } else {
+            size = (float) (Math.random() * (avgPlayerSize*4.0) + 4.0); // 5 - 4xavgSize
+        }
+
+        float midY = ((HEIGHT - size / 2 - 75)  + (-size / 2)) / 2.0f;
+        int y;
+        if (avgY < midY - 230) {
+            y = (int) (Math.random() * (HEIGHT - midY) + midY);
+        } else if (avgY > midY + 230) {
+            y = (int) (Math.random() * (midY));
+        } else {
+            y = (int) (Math.random() * (HEIGHT - size / 2 - 75)  + (-size / 2));
+        }
+
+        int x = spawnLeft ? -200 : 950; 
         String direction = spawnLeft ? "right" : "left";
-        float speed = (float) (0.6 + (Math.random()-0.5) / 2.5);
+        float speed = (float) (0.3 + (Math.random()*0.9) + ((5.0/size)*0.1)); //x0.3-1.2 (+ 0.1 liner if ตัวเล็กสุด) 
 
         Fish f = new Fish(x, y, size, direction, "enemy");
         f.speed = speed;

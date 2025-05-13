@@ -96,38 +96,33 @@ public class Client {
                     String data = responseLine.substring("Fish:".length());
                     String[] fishEntries = data.split(";");
 
-                    for (String fishEntry : fishEntries) {
-                        fishEntry = fishEntry.trim();
-                        if (fishEntry.isEmpty())
-                            continue;
+                    Set<Integer> receivedIds = new HashSet<>();
 
-                        String[] attributes = fishEntry.split(", ");
-                        int id = -1;
-                        float x = 0, y = 0, size = 0;
+                for (String fishEntry : fishEntries) {
+                    fishEntry = fishEntry.trim();
+                    if (fishEntry.isEmpty()) continue;
 
-                        for (String attr : attributes) {
-                            String[] keyValue = attr.split(":");
-                            if (keyValue.length != 2)
-                                continue;
+                    String[] attributes = fishEntry.split(", ");
+                    int id = -1;
+                    float x = 0, y = 0, size = 0;
 
-                            String key = keyValue[0];
-                            String value = keyValue[1];
+                    for (String attr : attributes) {
+                        String[] keyValue = attr.split(":");
+                        if (keyValue.length != 2) continue;
 
-                            switch (key) {
-                                case "id":
-                                    id = Integer.parseInt(value);
-                                    break;
-                                case "x":
-                                    x = Float.parseFloat(value);
-                                    break;
-                                case "y":
-                                    y = Float.parseFloat(value);
-                                    break;
-                                case "size":
-                                    size = Float.parseFloat(value);
-                                    break;
-                            }
+                        String key = keyValue[0];
+                        String value = keyValue[1];
+
+                        switch (key) {
+                            case "id" -> id = Integer.parseInt(value);
+                            case "x" -> x = Float.parseFloat(value);
+                            case "y" -> y = Float.parseFloat(value);
+                            case "size" -> size = Float.parseFloat(value);
                         }
+                    }
+
+                    if (id != -1) {
+                        receivedIds.add(id); // เก็บ id ที่ได้รับจาก server ทั้งหมด (All receivedIds)
 
                         if (!fishHashMap.containsKey(id)) {
                             Fish newFish = new Fish(x, y, size, "right", "normal", true);
@@ -136,6 +131,11 @@ public class Client {
                             updateFishFromServer(id, x, y, size);
                         }
                     }
+                }
+
+                // ลบปลาที่ไม่ได้อยู่ใน receivedIds แล้ว
+                fishHashMap.keySet().removeIf(existingId -> !receivedIds.contains(existingId));
+
                 }
 
                 if (responseLine.startsWith("result:")) {
