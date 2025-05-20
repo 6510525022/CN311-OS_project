@@ -117,13 +117,13 @@ public class Fish {
         boolean spawnLeft = Math.random() < 0.5;
         float size;
         if (avgPlayerSize < avgSize){
-            if (avgPlayerSize < 50){
-                size = (float) (Math.random() * (avgPlayerSize*1.5) + 4.0); // 5 - 1.5xavgSize
+            if (avgPlayerSize < 75){
+                size = (float) (Math.random() * (avgPlayerSize*1.50) + 4.0); // 5 - 1.5xavgSize
             } else  {
-                size = (float) (Math.random() * (avgPlayerSize*3) + 4.0); // 5 - 3xavgSize
+                size = (float) (Math.random() * (avgPlayerSize*2.25) + 4.0); // 5 - 2.25xavgSize
             }
         } else {
-            size = (float) (Math.random() * (avgPlayerSize*4.0) + 4.0); // 5 - 4xavgSize
+            size = (float) (Math.random() * (avgPlayerSize*2.75) + 19.0); // 19 - 2.75xavgSize
         }
 
         float midY = ((HEIGHT - size / 2 - 75)  + (-size / 2)) / 2.0f;
@@ -138,7 +138,7 @@ public class Fish {
 
         int x = spawnLeft ? -200 : 950; 
         String direction = spawnLeft ? "right" : "left";
-        float speed = (float) (0.3 + (Math.random()*0.9) + ((5.0/size)*0.1)); //x0.3-1.2 (+ 0.1 liner if ตัวเล็กสุด) 
+        float speed = (float) (0.3 + (Math.random()*0.8) + ((5.0/size)*0.2)); //x0.3-1.1 (+ 0.2 liner if ตัวเล็กสุด) 
 
         Fish f = new Fish(x, y, size, direction, "enemy");
         f.speed = speed;
