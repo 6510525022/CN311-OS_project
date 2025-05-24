@@ -36,7 +36,7 @@ public class GameServer {
                 checkFishCollisions(); // ชนหมาย
                 broadcastFishState(); // ขยับ
                 checkIfAllPlayersAreDead(); // เช็คว่าผู้เล่นตายหมดหรือยัง
-            }, 0, 16, TimeUnit.MILLISECONDS); //60 per second
+            }, 0, 20, TimeUnit.MILLISECONDS); // ทุก 20 ms เท่า client
 
             ScheduledExecutorService spawner = Executors.newScheduledThreadPool(1);
             spawner.scheduleAtFixedRate(() -> {
@@ -59,7 +59,7 @@ public class GameServer {
                     .orElse(300.0); 
                 Fish enemy = Fish.spawnEnemyFish(avgPlayerSize, avgSize, avgY);
                 fishMap.put(new Socket(), enemy); // <-- ต้องเปลี่ยนไปใช้ ID จริง
-            }, 0, 1200*(playerCount+1), TimeUnit.MILLISECONDS);
+            }, 0, 1250*(playerCount+1), TimeUnit.MILLISECONDS);
 
             // รอ client เชื่อมต่อที่ ServerSocket
             while (true) {
@@ -246,7 +246,7 @@ class ClientHandler extends Thread {
                         // ถ้า client ส่งคำสั่งมาให้ server
                         Fish playerFish = GameServer.fishMap.get(socket);
                         if (playerFish != null && playerFish.isAlive) {
-                            if (List.of("up", "down", "left", "right", "upleft", "upright", "downleft", "downright").contains(text)) {
+                            if (List.of("up", "down", "left", "right").contains(text)) {
                                 playerFish.move(text);
                             }
                         }
@@ -259,7 +259,7 @@ class ClientHandler extends Thread {
                             // writer.println("result phase {next}");
                         } else {
                             System.err.println(
-                                    "In-game phase {up, down, left, right, upleft, upright, downleft, downright, next}");
+                                    "In-game phase {up, down, left, right, next}");
                             // writer.println("In-game phase {up, down, left, right, next}");
                         }
                         break;

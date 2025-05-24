@@ -69,30 +69,6 @@ public class Fish {
                         this.y -= stepCheng * 0.75 * speed;
                         }
                     break;
-                case "upleft":
-                    if (!(this.x < -size / 2)) {
-                        this.x -= stepCheng * speed;
-                        }
-                    if (!(this.y < -size / 2)) {
-                        this.y -= stepCheng * 0.75 * speed;
-                        }
-                    break;
-                case "downright":
-                    if (!(this.x > WIDTH - size)) {
-                        this.x += stepCheng * speed;
-                        }
-                    if (!(this.y > HEIGHT - size / 2 - 75)) {
-                        this.y += stepCheng * 0.8 * speed;
-                        }
-                    break;
-                case "downleft":
-                    if (!(this.x < -size / 2)) {
-                        this.x -= stepCheng * speed;
-                        }
-                    if (!(this.y > HEIGHT - size / 2 - 75)) {
-                        this.y += stepCheng * 0.8 * speed;
-                        }
-                    break;
             }
         }
     }
@@ -118,12 +94,12 @@ public class Fish {
         float size;
         if (avgPlayerSize < avgSize){
             if (avgPlayerSize < 75){
-                size = (float) (Math.random() * (avgPlayerSize*1.50) + 4.0); // 5 - 1.5xavgSize
+                size = (float) (Math.random() * (avgPlayerSize*1.50) + 5.0); // 5 - 1.5xavgSize
             } else  {
-                size = (float) (Math.random() * (avgPlayerSize*2.25) + 4.0); // 5 - 2.25xavgSize
+                size = (float) (Math.random() * (avgPlayerSize*2.25) + 5.0); // 5 - 2.25xavgSize
             }
         } else {
-            size = (float) (Math.random() * (avgPlayerSize*2.75) + 19.0); // 19 - 2.75xavgSize
+            size = (float) (Math.random() * (avgPlayerSize*2.75) + 20.0); // 19 - 2.75xavgSize
         }
 
         float midY = ((HEIGHT - size / 2 - 75)  + (-size / 2)) / 2.0f;
