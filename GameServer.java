@@ -3,6 +3,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.awt.Rectangle;
 
 public class GameServer {
     private static final int WIDTH = 800;
@@ -171,13 +172,83 @@ public class GameServer {
         }
     }
 
-    public static boolean isColliding(Fish a, Fish b) {
-        double dx = a.x - b.x;
-        double dy = a.y - b.y;
-        double distance = Math.sqrt(dx * dx + dy * dy);
-        double collisionDistance = (a.size + b.size) / 2.0; // ปรับตามลักษณะการแสดงผล
-        return distance < collisionDistance;
+   public static boolean isColliding(Fish a, Fish b) {
+    // จุดศูนย์กลางปลา a
+    double aCx = a.x + (a.size * 1.5) / 2.0;
+    double aCy = a.y + (a.size) / 2.0;
+
+    // จุดศูนย์กลางปลา b
+    double bCx = b.x + (b.size * 1.5) / 2.0;
+    double bCy = b.y + (b.size) / 2.0;
+
+    // รัศมีแนวนอนและแนวตั้งของปลาแต่ละตัว (ellipse)
+    double aRx = (a.size * 1.5) / 2.0;
+    double aRy = a.size / 2.0;
+    double bRx = (b.size * 1.5) / 2.0;
+    double bRy = b.size / 2.0;
+
+    double dx = aCx - bCx;
+    double dy = aCy - bCy;
+
+    // สูตรเช็ควงรีชนกัน (normalize ระยะห่างด้วยรัศมีรวม)
+    double nx = dx / (aRx + bRx);
+    double ny = dy / (aRy + bRy);
+
+    boolean bodyCollide = (nx * nx + ny * ny) <= 1.0;
+
+    // --- ตรวจสอบการชนของหาง ---
+    // กำหนดขนาดหาง (เหมือนที่วาด)
+    int aWidth = (int)(a.size * 1.5);
+    int aHeight = (int)(a.size);
+    int bWidth = (int)(b.size * 1.5);
+    int bHeight = (int)(b.size);
+
+    // สร้าง bounding box ของหางปลา a
+    Rectangle aTailRect;
+    if ("right".equals(a.direction)) {
+        aTailRect = new Rectangle(
+            (int)(a.x - aWidth / 4), // หางอยู่ด้านซ้ายตัวปลา
+            (int)(a.y + aHeight / 4),
+            aWidth / 4,
+            aHeight / 2
+        );
+    } else { // left
+        aTailRect = new Rectangle(
+            (int)(a.x + aWidth),
+            (int)(a.y + aHeight / 4),
+            aWidth / 4,
+            aHeight / 2
+        );
     }
+
+    // สร้าง bounding box ของหางปลา b
+    Rectangle bTailRect;
+    if ("right".equals(b.direction)) {
+        bTailRect = new Rectangle(
+            (int)(b.x - bWidth / 4),
+            (int)(b.y + bHeight / 4),
+            bWidth / 4,
+            bHeight / 2
+        );
+    } else { // left
+        bTailRect = new Rectangle(
+            (int)(b.x + bWidth),
+            (int)(b.y + bHeight / 4),
+            bWidth / 4,
+            bHeight / 2
+        );
+    }
+
+    // ตรวจสอบว่า body หรือ tail ชนกัน
+    boolean tailCollide = aTailRect.intersects(
+        new Rectangle((int)b.x, (int)b.y, bWidth, bHeight)
+    ) || bTailRect.intersects(
+        new Rectangle((int)a.x, (int)a.y, aWidth, aHeight)
+    );
+
+    return bodyCollide || tailCollide;
+}
+
 
     private static void checkIfAllPlayersAreDead() {
         boolean anyAlive = fishMap.values().stream()
