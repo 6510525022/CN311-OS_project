@@ -4,6 +4,7 @@ import java.awt.event.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.swing.*;
 
 public class Client {
@@ -16,7 +17,7 @@ public class Client {
     private JButton controlButton;
     private FishPanel fishPanel;
 
-    private HashMap<Integer, Fish> fishHashMap = new HashMap<>();
+    private ConcurrentHashMap<Integer, Fish> fishHashMap = new ConcurrentHashMap<>();
     private int phase = 0;
     private static final int WIDTH = 800;
     private static final int HEIGHT = 600;
@@ -199,9 +200,6 @@ public class Client {
             return;
         }
 
-        // if (!fish.isPlayer) {
-        //     return;
-        // }
         if (fish.x != newX) {
             fish.direction = newX > fish.x ? "right" : "left";
             fish.x = newX;
