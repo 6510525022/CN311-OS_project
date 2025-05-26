@@ -256,9 +256,9 @@ public class Client {
         }
     }
 
-    // ส่งการกดคีย์ทุกๆ 20 ms
+    // ส่งการกดคีย์ทุกๆ 16 ms
     private void setupMovementTimer() {
-        javax.swing.Timer movementTimer = new javax.swing.Timer(20, e -> {
+        javax.swing.Timer movementTimer = new javax.swing.Timer(16, e -> {
             if (phase != 1) {
                 return;
             }

@@ -45,12 +45,12 @@ public class Fish {
             switch (di) {
                 case "up":
                     if (!(this.y < -size / 2)) {
-                        this.y -= step * speed;
+                        this.y -= step * speed * 0.85;
                     }
                     break;
                 case "down":
                     if (!(this.y > HEIGHT - size / 2 - 75)) {
-                        this.y += step * speed;
+                        this.y += step * speed * 0.85;
                     }
                     break;
                 case "left":
@@ -58,7 +58,7 @@ public class Fish {
                         if (this.x < 0 - WIDTH * 0.5) {
                             this.isAlive = false;
                         }
-                        this.x -= step * 1.10 * speed;
+                        this.x -= step * 1.10 * speed * 0.85;
                     }
                     break;
                 case "right":
@@ -66,15 +66,7 @@ public class Fish {
                         if (this.x > WIDTH * 1.5) {
                             this.isAlive = false;
                         }
-                        this.x += step * 1.10 * speed;
-                    }
-                    break;
-                case "upright":
-                    if (!(this.x > WIDTH - size)) {
-                        this.x += stepCheng * speed;
-                    }
-                    if (!(this.x > WIDTH + size / 2)) {
-                        this.y -= stepCheng * 0.75 * speed;
+                        this.x += step * 1.10 * speed * 0.85;
                     }
                     break;
             }
@@ -105,10 +97,10 @@ public class Fish {
             if (avgPlayerSize < 75) {
                 size = (float) (Math.random() * (avgPlayerSize * 1.50) + 5.0); // 5 - 1.5xavgSize
             } else {
-                size = (float) (Math.random() * (avgPlayerSize * 2.25) + 5.0); // 5 - 2.25xavgSize
+                size = (float) (Math.random() * (avgPlayerSize * 2.00) + 5.0); // 5 - 2.25xavgSize
             }
         } else {
-            size = (float) (Math.random() * (avgPlayerSize * 2.75) + 20.0); // 19 - 2.75xavgSize
+            size = (float) (Math.random() * (avgPlayerSize * 2.25) + 20.0); // 19 - 2.75xavgSize
         }
 
         float midY = ((HEIGHT - size / 2 - 75) + (-size / 2)) / 2.0f;
