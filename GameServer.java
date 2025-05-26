@@ -1,11 +1,12 @@
 
+import java.awt.Rectangle;
 import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.awt.Rectangle;
 
 public class GameServer {
+
     private static final int WIDTH = 800;
     private static final int HEIGHT = 600;
 
@@ -21,6 +22,7 @@ public class GameServer {
     // ใช้ synchronized list เพื่อให้หลายเธรดใช้งานพร้อมกันได้อย่างปลอดภัย
     // (เรื่อง critical section)
     public static List<ClientHandler> handlers = Collections.synchronizedList(new ArrayList<>());
+    
 
     public static void main(String[] args) {
         // สร้าง GameState เพื่อเริ่มต้นแชร์สถานะเกมให้กับ client
@@ -33,7 +35,10 @@ public class GameServer {
             // Thread สำหรับส่ง FishState ให้ client ทุกคนทุก ๆ 16ms
             ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
             scheduler.scheduleAtFixedRate(() -> {
-                if (gameState.getGamePhase() != 1) return; // ถ้าไม่อยู่ใน phase in-game ให้ไม่ทำงาน
+                if (gameState.getGamePhase() != 1) {
+                    return; // ถ้าไม่อยู่ใน phase in-game ให้ไม่ทำงาน
+
+                }
                 checkFishCollisions(); // ชนหมาย
                 broadcastFishState(); // ขยับ
                 checkIfAllPlayersAreDead(); // เช็คว่าผู้เล่นตายหมดหรือยัง
@@ -41,26 +46,29 @@ public class GameServer {
 
             ScheduledExecutorService spawner = Executors.newScheduledThreadPool(1);
             spawner.scheduleAtFixedRate(() -> {
-                if (gameState.getGamePhase() != 1) return; // ถ้าไม่อยู่ใน phase in-game ให้ไม่ทำงาน
+                if (gameState.getGamePhase() != 1) {
+                    return; // ถ้าไม่อยู่ใน phase in-game ให้ไม่ทำงาน
+
+                }
                 float avgSize = (float) fishMap.values().stream()
-                    .filter(fish -> fish.isAlive)
-                    .mapToDouble(fish -> fish.size)
-                    .average()
-                    .orElse(25.0); // หากไม่มีปลาผู้เล่นเหลืออยู่
+                        .filter(fish -> fish.isAlive)
+                        .mapToDouble(fish -> fish.size)
+                        .average()
+                        .orElse(25.0); // หากไม่มีปลาผู้เล่นเหลืออยู่
                 float avgPlayerSize = (float) fishMap.values().stream()
-                    .filter(fish -> fish.isPlayer)
-                    .filter(fish -> fish.isAlive)
-                    .mapToDouble(fish -> fish.size)
-                    .average()
-                    .orElse(25.0); // หากไม่มีปลาผู้เล่นเหลืออยู่
+                        .filter(fish -> fish.isPlayer)
+                        .filter(fish -> fish.isAlive)
+                        .mapToDouble(fish -> fish.size)
+                        .average()
+                        .orElse(25.0); // หากไม่มีปลาผู้เล่นเหลืออยู่
                 float avgY = (float) fishMap.values().stream()
-                    .filter(fish -> fish.isAlive)
-                    .mapToDouble(fish -> fish.y)
-                    .average()
-                    .orElse(300.0); 
+                        .filter(fish -> fish.isAlive)
+                        .mapToDouble(fish -> fish.y)
+                        .average()
+                        .orElse(300.0);
                 Fish enemy = Fish.spawnEnemyFish(avgPlayerSize, avgSize, avgY);
                 fishMap.put(new Socket(), enemy); // <-- ต้องเปลี่ยนไปใช้ ID จริง
-            }, 0, 1250*(playerCount+1), TimeUnit.MILLISECONDS);
+            }, 0, 1250 * (playerCount + 1), TimeUnit.MILLISECONDS);
 
             // รอ client เชื่อมต่อที่ ServerSocket
             while (true) {
@@ -88,7 +96,7 @@ public class GameServer {
             Fish f = entry.getValue();
 
             // ปลา bot ว่าย เอง
-            if(!f.isPlayer) {
+            if (!f.isPlayer) {
                 f.move(f.direction);
             }
 
@@ -102,6 +110,8 @@ public class GameServer {
                     .append(", y:").append(f.y)
                     .append(", size:").append(f.size)
                     .append(", isAlive:").append(f.isAlive)
+                    .append(", score:").append(f.score)
+                    .append(", isPlayer:").append(f.isPlayer)
                     .append("; ");
         }
 
@@ -125,13 +135,13 @@ public class GameServer {
     public static void broadcastPhase(int currentPhase) {
         for (ClientHandler h : handlers) {
             h.send("phase:" + currentPhase);
-        
+
             if (currentPhase == 1) {
                 if (GameServer.fishMap.get(h.socket) == null) {
                     Fish playerFish = new Fish(GameServer.random(200, 600), GameServer.random(300, 400), 25, "right", "player", true);
                     GameServer.fishMap.put(h.socket, playerFish);
                 }
-            }    
+            }
         }
     }
 
@@ -143,27 +153,35 @@ public class GameServer {
             Socket socket1 = entry1.getKey();
 
             // ข้ามที่ไม่ใช้ผู้เล่น
-            if (!fish1.isPlayer) continue;
+            if (!fish1.isPlayer) {
+                continue;
+            }
 
             // ข้ามปลาที่ตายแล้ว
-            if (!fish1.isAlive) continue;
+            if (!fish1.isAlive) {
+                continue;
+            }
 
             for (Map.Entry<Socket, Fish> entry2 : fishMap.entrySet()) {
                 Fish fish2 = entry2.getValue();
                 Socket socket2 = entry2.getKey();
 
                 // ข้ามที่เป็นผู้เล่น (ไม่ใช่ตัวเองกับเพื่อน)
-                if (fish2.isPlayer) continue;
+                if (fish2.isPlayer) {
+                    continue;
+                }
 
                 // ถ้าอยู่ใกล้กันพอจะชนกัน
                 if (isColliding(fish1, fish2)) {
                     fish1.eat(fish2);
                 }
 
-                if(!fish1.isAlive)
+                if (!fish1.isAlive) {
                     toRemove.add(socket1);
-                if(!fish2.isAlive)
+                }
+                if (!fish2.isAlive) {
                     toRemove.add(socket2);
+                }
             }
         }
 
@@ -172,87 +190,86 @@ public class GameServer {
         }
     }
 
-   public static boolean isColliding(Fish a, Fish b) {
-    // จุดศูนย์กลางปลา a
-    double aCx = a.x + (a.size * 1.5) / 2.0;
-    double aCy = a.y + (a.size) / 2.0;
+    public static boolean isColliding(Fish a, Fish b) {
+        // จุดศูนย์กลางปลา a
+        double aCx = a.x + (a.size * 1.5) / 2.0;
+        double aCy = a.y + (a.size) / 2.0;
 
-    // จุดศูนย์กลางปลา b
-    double bCx = b.x + (b.size * 1.5) / 2.0;
-    double bCy = b.y + (b.size) / 2.0;
+        // จุดศูนย์กลางปลา b
+        double bCx = b.x + (b.size * 1.5) / 2.0;
+        double bCy = b.y + (b.size) / 2.0;
 
-    // รัศมีแนวนอนและแนวตั้งของปลาแต่ละตัว (ellipse)
-    double aRx = (a.size * 1.5) / 2.0;
-    double aRy = a.size / 2.0;
-    double bRx = (b.size * 1.5) / 2.0;
-    double bRy = b.size / 2.0;
+        // รัศมีแนวนอนและแนวตั้งของปลาแต่ละตัว (ellipse)
+        double aRx = (a.size * 1.5) / 2.0;
+        double aRy = a.size / 2.0;
+        double bRx = (b.size * 1.5) / 2.0;
+        double bRy = b.size / 2.0;
 
-    double dx = aCx - bCx;
-    double dy = aCy - bCy;
+        double dx = aCx - bCx;
+        double dy = aCy - bCy;
 
-    // สูตรเช็ควงรีชนกัน (normalize ระยะห่างด้วยรัศมีรวม)
-    double nx = dx / (aRx + bRx);
-    double ny = dy / (aRy + bRy);
+        // สูตรเช็ควงรีชนกัน (normalize ระยะห่างด้วยรัศมีรวม)
+        double nx = dx / (aRx + bRx);
+        double ny = dy / (aRy + bRy);
 
-    boolean bodyCollide = (nx * nx + ny * ny) <= 1.0;
+        boolean bodyCollide = (nx * nx + ny * ny) <= 1.0;
 
-    // --- ตรวจสอบการชนของหาง ---
-    // กำหนดขนาดหาง (เหมือนที่วาด)
-    int aWidth = (int)(a.size * 1.5);
-    int aHeight = (int)(a.size);
-    int bWidth = (int)(b.size * 1.5);
-    int bHeight = (int)(b.size);
+        // --- ตรวจสอบการชนของหาง ---
+        // กำหนดขนาดหาง (เหมือนที่วาด)
+        int aWidth = (int) (a.size * 1.5);
+        int aHeight = (int) (a.size);
+        int bWidth = (int) (b.size * 1.5);
+        int bHeight = (int) (b.size);
 
-    // สร้าง bounding box ของหางปลา a
-    Rectangle aTailRect;
-    if ("right".equals(a.direction)) {
-        aTailRect = new Rectangle(
-            (int)(a.x - aWidth / 4), // หางอยู่ด้านซ้ายตัวปลา
-            (int)(a.y + aHeight / 4),
-            aWidth / 4,
-            aHeight / 2
+        // สร้าง bounding box ของหางปลา a
+        Rectangle aTailRect;
+        if ("right".equals(a.direction)) {
+            aTailRect = new Rectangle(
+                    (int) (a.x - aWidth / 4), // หางอยู่ด้านซ้ายตัวปลา
+                    (int) (a.y + aHeight / 4),
+                    aWidth / 4,
+                    aHeight / 2
+            );
+        } else { // left
+            aTailRect = new Rectangle(
+                    (int) (a.x + aWidth),
+                    (int) (a.y + aHeight / 4),
+                    aWidth / 4,
+                    aHeight / 2
+            );
+        }
+
+        // สร้าง bounding box ของหางปลา b
+        Rectangle bTailRect;
+        if ("right".equals(b.direction)) {
+            bTailRect = new Rectangle(
+                    (int) (b.x - bWidth / 4),
+                    (int) (b.y + bHeight / 4),
+                    bWidth / 4,
+                    bHeight / 2
+            );
+        } else { // left
+            bTailRect = new Rectangle(
+                    (int) (b.x + bWidth),
+                    (int) (b.y + bHeight / 4),
+                    bWidth / 4,
+                    bHeight / 2
+            );
+        }
+
+        // ตรวจสอบว่า body หรือ tail ชนกัน
+        boolean tailCollide = aTailRect.intersects(
+                new Rectangle((int) b.x, (int) b.y, bWidth, bHeight)
+        ) || bTailRect.intersects(
+                new Rectangle((int) a.x, (int) a.y, aWidth, aHeight)
         );
-    } else { // left
-        aTailRect = new Rectangle(
-            (int)(a.x + aWidth),
-            (int)(a.y + aHeight / 4),
-            aWidth / 4,
-            aHeight / 2
-        );
+
+        return bodyCollide || tailCollide;
     }
-
-    // สร้าง bounding box ของหางปลา b
-    Rectangle bTailRect;
-    if ("right".equals(b.direction)) {
-        bTailRect = new Rectangle(
-            (int)(b.x - bWidth / 4),
-            (int)(b.y + bHeight / 4),
-            bWidth / 4,
-            bHeight / 2
-        );
-    } else { // left
-        bTailRect = new Rectangle(
-            (int)(b.x + bWidth),
-            (int)(b.y + bHeight / 4),
-            bWidth / 4,
-            bHeight / 2
-        );
-    }
-
-    // ตรวจสอบว่า body หรือ tail ชนกัน
-    boolean tailCollide = aTailRect.intersects(
-        new Rectangle((int)b.x, (int)b.y, bWidth, bHeight)
-    ) || bTailRect.intersects(
-        new Rectangle((int)a.x, (int)a.y, aWidth, aHeight)
-    );
-
-    return bodyCollide || tailCollide;
-}
-
 
     private static void checkIfAllPlayersAreDead() {
         boolean anyAlive = fishMap.values().stream()
-            .anyMatch(fish -> fish.isPlayer && fish.isAlive);
+                .anyMatch(fish -> fish.isPlayer && fish.isAlive);
 
         if (!anyAlive) {
             System.out.println("All players are dead. Moving to next phase.");
@@ -265,7 +282,7 @@ public class GameServer {
 
 class ClientHandler extends Thread {
 
-    protected  Socket socket;
+    protected Socket socket;
     private GameState gameState;
     private PrintWriter writer;
 
@@ -285,9 +302,7 @@ class ClientHandler extends Thread {
     public void run() {
         int currentPhase = gameState.getGamePhase();
 
-        try (InputStream input = socket.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-                OutputStream output = socket.getOutputStream();) {
+        try (InputStream input = socket.getInputStream(); BufferedReader reader = new BufferedReader(new InputStreamReader(input)); OutputStream output = socket.getOutputStream();) {
             writer = new PrintWriter(output, true);
             // writer.println("เชื่อมต่อกับ Server สำเร็จ");
             System.out.println("____SERVER SEND____, phase:" + currentPhase);

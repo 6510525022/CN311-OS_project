@@ -1,11 +1,13 @@
-import javax.swing.*;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import javax.swing.*;
 
 public class Client {
+
     private Socket socket;
     private PrintWriter writer;
     private BufferedReader reader;
@@ -21,6 +23,8 @@ public class Client {
 
     // ใช้สำหรับตรวจสอบว่าปุ่มไหนถูกกดค้างอยู่ เพื่อให้เคลื่อนที่แบบเฉียงได้
     private Set<Integer> pressedKeys = new HashSet<>();
+
+    private int myId = -1;  // เก็บ id ของผู้เล่น
 
     public static void main(String[] args) {
         String host = "localhost";
@@ -73,8 +77,6 @@ public class Client {
         buttonPanel.add(controlButton);
         frame.add(buttonPanel, BorderLayout.SOUTH);
 
-        Set<Integer> pressedKeys = new HashSet<>();
-
         setupKeyBindings(frame.getRootPane());
         setupMovementTimer();
 
@@ -88,54 +90,79 @@ public class Client {
             String responseLine;
             System.out.println("Listening to server...");
             while (!(responseLine = reader.readLine()).equals("END")) {
+
+                if (responseLine.startsWith("yourId:")) {
+                    myId = Integer.parseInt(responseLine.split(":")[1]);
+                    System.out.println("Your player ID is: " + myId);
+                }
+
                 if (responseLine.startsWith("phase:")) {
                     int newPhase = Integer.parseInt(responseLine.split(":")[1]);
                     updatePhaseFromServer(newPhase);
                 }
+
                 if (responseLine.startsWith("Fish:")) {
                     String data = responseLine.substring("Fish:".length());
                     String[] fishEntries = data.split(";");
 
                     Set<Integer> receivedIds = new HashSet<>();
 
-                for (String fishEntry : fishEntries) {
-                    fishEntry = fishEntry.trim();
-                    if (fishEntry.isEmpty()) continue;
+                    for (String fishEntry : fishEntries) {
+                        fishEntry = fishEntry.trim();
+                        if (fishEntry.isEmpty()) {
+                            continue;
+                        }
 
-                    String[] attributes = fishEntry.split(", ");
-                    int id = -1;
-                    float x = 0, y = 0, size = 0;
+                        String[] attributes = fishEntry.split(", ");
+                        int id = -1;
+                        float x = 0, y = 0, size = 0, score = 0;
+                        boolean isPlayer = false;
 
-                    for (String attr : attributes) {
-                        String[] keyValue = attr.split(":");
-                        if (keyValue.length != 2) continue;
+                        for (String attr : attributes) {
+                            String[] keyValue = attr.split(":");
+                            if (keyValue.length != 2) {
+                                continue;
+                            }
 
-                        String key = keyValue[0];
-                        String value = keyValue[1];
+                            String key = keyValue[0];
+                            String value = keyValue[1];
 
-                        switch (key) {
-                            case "id" -> id = Integer.parseInt(value);
-                            case "x" -> x = Float.parseFloat(value);
-                            case "y" -> y = Float.parseFloat(value);
-                            case "size" -> size = Float.parseFloat(value);
+                            switch (key) {
+                                case "id" ->
+                                    id = Integer.parseInt(value);
+                                case "x" ->
+                                    x = Float.parseFloat(value);
+                                case "y" ->
+                                    y = Float.parseFloat(value);
+                                case "size" ->
+                                    size = Float.parseFloat(value);
+                                case "score" ->
+                                    score = Float.parseFloat(value);
+                                case "isPlayer" ->
+                                    isPlayer = Boolean.parseBoolean(value);
+                            }
+                        }
+
+                        if (id != -1) {
+                            receivedIds.add(id);
+
+                            if (!fishHashMap.containsKey(id)) {
+                                Fish newFish = new Fish(x, y, size, "right", "normal", isPlayer);
+                                newFish.score = score;
+                                fishHashMap.put(id, newFish);
+                            } else {
+                                updateFishFromServer(id, x, y, size, score);
+                                // อัพเดต isPlayer ด้วยถ้าต่างกัน
+                                Fish fish = fishHashMap.get(id);
+                                if (fish != null && fish.isPlayer != isPlayer) {
+                                    fish.isPlayer = isPlayer;
+                                }
+                            }
                         }
                     }
 
-                    if (id != -1) {
-                        receivedIds.add(id); // เก็บ id ที่ได้รับจาก server ทั้งหมด (All receivedIds)
-
-                        if (!fishHashMap.containsKey(id)) {
-                            Fish newFish = new Fish(x, y, size, "right", "normal", true);
-                            fishHashMap.put(id, newFish);
-                        } else {
-                            updateFishFromServer(id, x, y, size);
-                        }
-                    }
-                }
-
-                // ลบปลาที่ไม่ได้อยู่ใน receivedIds แล้ว
-                fishHashMap.keySet().removeIf(existingId -> !receivedIds.contains(existingId));
-
+                    // ลบปลาที่ไม่ได้อยู่ใน receivedIds แล้ว
+                    fishHashMap.keySet().removeIf(existingId -> !receivedIds.contains(existingId));
                 }
 
                 if (responseLine.startsWith("result:")) {
@@ -153,38 +180,49 @@ public class Client {
         System.out.println("Server Phase updated to: " + phase);
 
         switch (phase) {
-            case 0 -> controlButton.setText("Start");
-            case 1 -> controlButton.setText("End Game");
-            case 2 -> controlButton.setText("Lobby");
+            case 0 ->
+                controlButton.setText("Start");
+            case 1 ->
+                controlButton.setText("End Game");
+            case 2 ->
+                controlButton.setText("Lobby");
         }
+
+        fishPanel.setPhase(phase);
 
         frame.requestFocusInWindow();
     }
 
-    private void updateFishFromServer(int id, float newX, float newY, float newSize) {
+    private void updateFishFromServer(int id, float newX, float newY, float newSize, float newScore) {
         Fish fish = fishHashMap.get(id);
-        if (fish == null)
-            return;
-
-        if (!fish.isPlayer) {
+        if (fish == null) {
             return;
         }
 
+        // if (!fish.isPlayer) {
+        //     return;
+        // }
         if (fish.x != newX) {
             fish.direction = newX > fish.x ? "right" : "left";
             fish.x = newX;
         }
 
-        if (fish.y != newY)
+        if (fish.y != newY) {
             fish.y = newY;
-        if (fish.size != newSize)
+        }
+        if (fish.size != newSize) {
             fish.size = newSize;
+        }
+
+        if (fish.score != newScore) {
+            fish.score = newScore;
+        }
 
         fishPanel.repaint();
     }
 
     private void updateResultFromServer(String Result) {
-
+        // implement logic if needed
     }
 
     private void sendMove(String msg) {
@@ -195,7 +233,7 @@ public class Client {
         InputMap inputMap = component.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         ActionMap actionMap = component.getActionMap();
 
-        int[] keys = { KeyEvent.VK_W, KeyEvent.VK_A, KeyEvent.VK_S, KeyEvent.VK_D };
+        int[] keys = {KeyEvent.VK_W, KeyEvent.VK_A, KeyEvent.VK_S, KeyEvent.VK_D};
 
         for (int keyCode : keys) {
             String keyPressed = "pressed " + keyCode;
@@ -223,8 +261,9 @@ public class Client {
     // ส่งการกดคีย์ทุกๆ 20 ms
     private void setupMovementTimer() {
         javax.swing.Timer movementTimer = new javax.swing.Timer(20, e -> {
-            if (phase != 1)
+            if (phase != 1) {
                 return;
+            }
 
             if (pressedKeys.contains(KeyEvent.VK_W)) {
                 sendMove("up");
