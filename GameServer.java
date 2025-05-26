@@ -22,7 +22,6 @@ public class GameServer {
     // ใช้ synchronized list เพื่อให้หลายเธรดใช้งานพร้อมกันได้อย่างปลอดภัย
     // (เรื่อง critical section)
     public static List<ClientHandler> handlers = Collections.synchronizedList(new ArrayList<>());
-    
 
     public static void main(String[] args) {
         // สร้าง GameState เพื่อเริ่มต้นแชร์สถานะเกมให้กับ client
@@ -298,13 +297,12 @@ class ClientHandler extends Thread {
         }
     }
 
-    // ใน ClientHandler
     public void run() {
         int currentPhase = gameState.getGamePhase();
 
-        try (InputStream input = socket.getInputStream(); BufferedReader reader = new BufferedReader(new InputStreamReader(input)); OutputStream output = socket.getOutputStream();) {
+        try (
+                InputStream input = socket.getInputStream(); BufferedReader reader = new BufferedReader(new InputStreamReader(input)); OutputStream output = socket.getOutputStream()) {
             writer = new PrintWriter(output, true);
-            // writer.println("เชื่อมต่อกับ Server สำเร็จ");
             System.out.println("____SERVER SEND____, phase:" + currentPhase);
             writer.println("phase:" + currentPhase);
             writer.println("END:");
@@ -314,22 +312,17 @@ class ClientHandler extends Thread {
                 currentPhase = gameState.getGamePhase();
                 switch (currentPhase) {
                     case 0: // Lobby phase
-                        // ถ้า client ส่งคำสั่งมาให้ server
                         if (text.equals("start")) {
-                            gameState.setGamePhase(1); // Change phase เป็น in-game
+                            gameState.setGamePhase(1);
                             GameServer.fishMap = new ConcurrentHashMap<>(); // reset fishMap
                             GameServer.broadcastPhase(1);
                             System.err.println("เริ่มเกมแล้ว In-game phase {up, down, left, right, next}");
-                            // writer.println("เริ่มเกมแล้ว");
-                            // writer.println("In-game phase {up, down, left, right, next}");
                         } else {
                             System.err.println("Lobby phase {start}");
-                            // writer.println("Lobby phase {start}");
                         }
                         break;
 
                     case 1: // In-game phase
-                        // ถ้า client ส่งคำสั่งมาให้ server
                         Fish playerFish = GameServer.fishMap.get(socket);
                         if (playerFish != null && playerFish.isAlive) {
                             if (List.of("up", "down", "left", "right").contains(text)) {
@@ -337,40 +330,40 @@ class ClientHandler extends Thread {
                             }
                         }
 
-                        if (text.equals("next")) { // จบเกม
-                            gameState.setGamePhase(2); // เปลี่ยน phase แล้วทุก client เห็น
+                        if (text.equals("next")) {
+                            gameState.setGamePhase(2);
                             GameServer.broadcastPhase(2);
                             System.err.println("เกมจบแล้ว result phase {next}");
-                            // writer.println("เกมจบแล้ว");
-                            // writer.println("result phase {next}");
                         } else {
-                            System.err.println(
-                                    "In-game phase {up, down, left, right, next}");
-                            // writer.println("In-game phase {up, down, left, right, next}");
+                            System.err.println("In-game phase {up, down, left, right, next}");
                         }
                         break;
 
                     case 2: // Result phase
                         if (text.equals("next")) {
-                            gameState.setGamePhase(0); // Return to Lobby phase
+                            gameState.setGamePhase(0);
                             GameServer.broadcastPhase(0);
                             System.err.println("กลับไป Lobby phase {start}");
-                            // writer.println("กลับไป Lobby แล้ว");
-                            // writer.println("Lobby phase {start}");
                         } else {
                             System.err.println("result phase {next}");
-                            // writer.println("result phase {next}");
                         }
                         break;
                 }
-
-                // writer.println("END");
             }
 
-            // ปิดการเชื่อมต่อ
-            socket.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Client disconnected unexpectedly: " + socket);
+        } finally {
+            // ======= เมื่อ client ออกจากระบบ =======
+            GameServer.fishMap.remove(socket);
+            GameServer.handlers.remove(this);
+            System.out.println("Client removed: " + socket);
+
+            try {
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
