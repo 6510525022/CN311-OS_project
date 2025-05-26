@@ -1,20 +1,19 @@
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.swing.*;
+import javax.swing.Timer;
 
 public class FishPanel extends JPanel {
 
     private ConcurrentHashMap<Integer, Fish> fishHashMap;
     private int phase = 0;
+
     private Map<Integer, Integer> playerIdToNumber = new HashMap<>();
     private int nextPlayerNumber = 1;
 
-    // Map เก็บคะแนนของแต่ละ player แยกต่างหาก (id -> score)
     private Map<Integer, Double> playerScores = new HashMap<>();
 
     public FishPanel(ConcurrentHashMap<Integer, Fish> fishHashMap) {
@@ -28,166 +27,53 @@ public class FishPanel extends JPanel {
         fishHashMap.put(id, fish);
         if (fish.isPlayer && !playerIdToNumber.containsKey(id)) {
             playerIdToNumber.put(id, nextPlayerNumber++);
-        }
-        // เก็บคะแนนเริ่มต้น
-        if (fish.isPlayer) {
             playerScores.put(id, fish.score);
         }
     }
 
-    public void setPhase(int phase) {
-        this.phase = phase;
+    public void removeFish(int id) {
+        System.out.println("[removeFish] Removing fish id: " + id);
+        fishHashMap.remove(id);
+
+        if (playerScores.containsKey(id)) {
+            playerScores.remove(id);
+            playerIdToNumber.remove(id);
+            System.out.println("[removeFish] Removed player data for id: " + id);
+        }
+
         repaint();
     }
 
-    // ฟังก์ชันสำหรับอัพเดตคะแนนแยกเมื่อปลาได้คะแนน (เช่นตอนกิน)
+    public void updateFishMap(ConcurrentHashMap<Integer, Fish> newFishMap) {
+        fishHashMap.clear();
+        fishHashMap.putAll(newFishMap);
+
+        if (phase == 1) {
+            cleanDisconnectedPlayers();  // ✅ เรียกเฉพาะตอนเล่นเกม
+        }
+
+        syncPlayerDataWithFishMap();
+        repaint();
+    }
+
     public void updatePlayerScore(int id, double newScore) {
         playerScores.put(id, newScore);
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
+    public void syncPlayerDataWithFishMap() {
+        System.out.println("[syncPlayerDataWithFishMap] Before sync playerScores: " + playerScores);
+        System.out.println("[syncPlayerDataWithFishMap] fishHashMap keys: " + fishHashMap.keySet());
 
-        // วาดปลาใน phase 1 หรือ 2
-        if (phase == 1 || phase == 2) {
-            for (Fish fish : fishHashMap.values()) {
-                if (fish.isAlive) {
-                    int fishWidth = (int) (fish.size * 1.5);
-                    int fishHeight = (int) (fish.size);
-
-                    int x = (int) fish.x;
-                    int y = (int) fish.y;
-
-                    g.setColor(Color.PINK);
-                    g.fillOval(x, y, fishWidth, fishHeight);
-
-                    int[] tailX, tailY;
-
-                    if ("right".equals(fish.direction)) {
-                        tailX = new int[]{x, x - fishWidth / 4, x - fishWidth / 4};
-                        tailY = new int[]{y + fishHeight / 2, y, y + fishHeight};
-                    } else {
-                        tailX = new int[]{x + fishWidth, x + fishWidth + fishWidth / 4, x + fishWidth + fishWidth / 4};
-                        tailY = new int[]{y + fishHeight / 2, y, y + fishHeight};
-                    }
-
-                    g.fillPolygon(tailX, tailY, 3);
-
-                    g.setColor(Color.BLACK);
-                    int eyeSize = fishWidth / 5;
-                    int eyeX = x + fishWidth / 3;
-                    int eyeY = y + fishHeight / 3;
-
-                    if ("right".equals(fish.direction)) {
-                        eyeX += fishWidth / 3;
-                    } else if ("left".equals(fish.direction)) {
-                        eyeX -= fishWidth / 3;
-                    }
-
-                    g.fillOval(eyeX, eyeY, eyeSize, eyeSize);
-                }
+        for (Integer id : fishHashMap.keySet()) {
+            Fish fish = fishHashMap.get(id);
+            if (fish.isPlayer && !playerScores.containsKey(id)) {
+                playerScores.put(id, fish.score);
+                playerIdToNumber.put(id, nextPlayerNumber++);
+                System.out.println("[syncPlayerDataWithFishMap] Added new active player id: " + id);
             }
         }
 
-        // แสดงคะแนนระหว่าง phase 1 (ดึงจาก fish.score)
-        if (phase == 1) {
-            g.setColor(Color.BLACK);
-            g.setFont(new Font("Arial", Font.BOLD, 18));
-
-            int lineHeight = g.getFontMetrics().getHeight();
-            int x = 10;
-            int y = 25;
-
-            for (Map.Entry<Integer, Fish> entry : fishHashMap.entrySet()) {
-                Fish fish = entry.getValue();
-                if (fish.isPlayer) {
-                    Integer playerNumber = playerIdToNumber.get(entry.getKey());
-                    if (playerNumber == null) {
-                        playerNumber = nextPlayerNumber++;
-                        playerIdToNumber.put(entry.getKey(), playerNumber);
-                    }
-                    String playerScore = "Player " + playerNumber + ", Score: " + (int) fish.score;
-                    g.drawString(playerScore, x, y);
-                    y += lineHeight;
-                    // อัพเดตคะแนนสำรองทุกครั้ง
-                    playerScores.put(entry.getKey(), fish.score);
-                }
-            }
-        } else if (phase == 0) {
-            g.setColor(Color.BLUE);
-            g.setFont(new Font("Arial", Font.BOLD, 40));
-            String gameTitle = "Fish Game Client";
-            FontMetrics fmTitle = g.getFontMetrics();
-            int titleX = (getWidth() - fmTitle.stringWidth(gameTitle)) / 2;
-            int titleY = getHeight() / 2 - 30;
-            g.drawString(gameTitle, titleX, titleY);
-
-            g.setColor(Color.BLACK);
-            g.setFont(new Font("Arial", Font.PLAIN, 24));
-            String message = "Please press Start to begin the game";
-            FontMetrics fm = g.getFontMetrics();
-            int x = (getWidth() - fm.stringWidth(message)) / 2;
-            int y = getHeight() / 2 + 20;
-            g.drawString(message, x, y);
-
-        }
-
-        if (phase == 2) {
-            g.setColor(Color.BLACK.darker());
-            g.setFont(new Font("Arial", Font.PLAIN, 24));
-            String message = "Game Over";
-            FontMetrics fm = g.getFontMetrics();
-            int x = (getWidth() - fm.stringWidth(message)) / 2;
-            int y = getHeight() / 2 - 60;
-            g.drawString(message, x, y);
-
-            g.setFont(new Font("Arial", Font.BOLD, 20));
-            int lineHeight = g.getFontMetrics().getHeight();
-            int scoreY = y + 50;
-
-            if (playerScores.isEmpty()) {
-                System.out.println("No players found to display scores at phase 2");
-            } else {
-                List<Map.Entry<Integer, Double>> sortedScores = new ArrayList<>(playerScores.entrySet());
-                sortedScores.sort((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()));
-
-                Double prevScore = null;
-
-                for (Map.Entry<Integer, Double> entry : sortedScores) {
-                    Integer playerId = entry.getKey();
-                    Double score = entry.getValue();
-
-                    Integer playerNumber = playerIdToNumber.get(playerId);
-                    if (playerNumber == null) {
-                        playerNumber = nextPlayerNumber++;
-                        playerIdToNumber.put(playerId, playerNumber);
-                    }
-
-                    String displayText;
-                    if (prevScore != null && score.equals(prevScore)) {
-                        displayText = "draw - Player " + playerNumber + ", Final Score: " + (int) Math.round(score);
-                    } else {
-                        displayText = "Player " + playerNumber + ", Final Score: " + (int) Math.round(score);
-                    }
-
-                    FontMetrics fmScore = g.getFontMetrics();
-                    int textWidth = fmScore.stringWidth(displayText);
-                    int scoreX = (getWidth() - textWidth) / 2;
-
-                    Color bgColor = new Color(255, 200, 200, 180);
-                    g.setColor(bgColor);
-                    g.fillRoundRect(scoreX - 8, scoreY - fmScore.getAscent(), textWidth + 16, lineHeight + 4, 10, 10);
-
-                    g.setColor(Color.BLACK.darker());
-                    g.drawString(displayText, scoreX, scoreY);
-
-                    scoreY += lineHeight + 10;
-                    prevScore = score;
-                }
-            }
-        }
-
+        System.out.println("[syncPlayerDataWithFishMap] After sync playerScores: " + playerScores);
     }
 
     public void updateFishPosition(int id, float newX, float newY, float newSize) {
@@ -197,6 +83,214 @@ public class FishPanel extends JPanel {
             fish.y = newY;
             fish.size = newSize;
             repaint();
+        }
+    }
+
+    public void setPhase(int phase) {
+        this.phase = phase;
+
+        if (phase == 2) {
+            System.out.println("[setPhase] Game Over phase detected. Skipping sync to keep playerScores intact.");
+        }
+
+        repaint();
+    }
+
+    private void cleanDisconnectedPlayers() {
+        if (phase != 1) {
+            return;  // ✅ ป้องกันลบคะแนนใน Phase 2
+        }
+        Set<Integer> currentFishIds = fishHashMap.keySet();
+
+        Iterator<Integer> scoreIt = playerScores.keySet().iterator();
+        while (scoreIt.hasNext()) {
+            int id = scoreIt.next();
+            if (!currentFishIds.contains(id)) {
+                scoreIt.remove();
+                System.out.println("[cleanDisconnectedPlayers] Removed playerScore for id: " + id);
+            }
+        }
+
+        Iterator<Integer> idIt = playerIdToNumber.keySet().iterator();
+        while (idIt.hasNext()) {
+            int id = idIt.next();
+            if (!currentFishIds.contains(id)) {
+                idIt.remove();
+                System.out.println("[cleanDisconnectedPlayers] Removed playerIdToNumber for id: " + id);
+            }
+        }
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
+        Graphics2D g2d = (Graphics2D) g;
+
+        // background สีฟ้าอ่อน
+        g2d.setColor(new Color(135, 206, 250));  // Sky Blue
+        g2d.fillRect(0, 0, getWidth(), getHeight());
+
+        // วาดสาหร่าย (seaweed) ที่พื้น (สมมติฐานอยู่ด้านล่าง panel)
+        g2d.setColor(new Color(34, 139, 34)); // สีเขียวเข้ม (forest green)
+        int seaweedBaseY = getHeight() - 30;  // ตำแหน่งฐานสาหร่ายด้านล่าง
+
+        // วาดสาหร่ายหลายต้นเป็นเส้นโค้ง
+        for (int i = 20; i < getWidth(); i += 40) {
+            // วาดเส้นโค้งง่าย ๆ ด้วย cubic curve (หรือใช้ drawPolyline)
+            int[] xPoints = {i, i - 5, i + 5, i - 5, i + 5, i};
+            int[] yPoints = {seaweedBaseY, seaweedBaseY - 20, seaweedBaseY - 40, seaweedBaseY - 60, seaweedBaseY - 80, seaweedBaseY - 100};
+            g2d.setStroke(new BasicStroke(3));  // ความหนาเส้น
+            g2d.drawPolyline(xPoints, yPoints, xPoints.length);
+        }
+
+        // ปริ้นไอดีปลา player
+        System.out.print("Rendering player fish ids: ");
+        for (Map.Entry<Integer, Fish> entry : fishHashMap.entrySet()) {
+            if (entry.getValue().isPlayer) {
+                System.out.print(entry.getKey() + " ");
+            }
+        }
+        System.out.println();
+
+        if (phase == 1 || phase == 2) {
+            for (Fish fish : fishHashMap.values()) {
+                if (fish.isAlive) {
+                    drawFish(g, fish);
+                }
+            }
+        }
+
+        if (phase == 1) {
+            drawScores(g);
+        } else if (phase == 0) {
+            drawStartScreen(g);
+        } else if (phase == 2) {
+            drawGameOver(g);
+        }
+    }
+
+    private void drawFish(Graphics g, Fish fish) {
+        int fishWidth = (int) (fish.size * 1.5);
+        int fishHeight = (int) (fish.size);
+        int x = (int) fish.x;
+        int y = (int) fish.y;
+
+        Graphics2D g2d = (Graphics2D) g;
+
+        // วาดตัวปลา สีชมพู
+        g2d.setColor(Color.PINK);
+        g2d.fillOval(x, y, fishWidth, fishHeight);
+
+        // วาดขอบดำรอบปลา
+        g2d.setColor(Color.BLACK);
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawOval(x, y, fishWidth, fishHeight);
+
+        // วาดหางปลา (tail) แบบเดิม แต่เพิ่มขอบดำ
+        int[] tailX, tailY;
+        if ("right".equals(fish.direction)) {
+            tailX = new int[]{x, x - fishWidth / 4, x - fishWidth / 4};
+            tailY = new int[]{y + fishHeight / 2, y, y + fishHeight};
+        } else {
+            tailX = new int[]{x + fishWidth, x + fishWidth + fishWidth / 4, x + fishWidth + fishWidth / 4};
+            tailY = new int[]{y + fishHeight / 2, y, y + fishHeight};
+        }
+
+        g2d.fillPolygon(tailX, tailY, 3);
+        g2d.setColor(Color.BLACK);
+        g2d.drawPolygon(tailX, tailY, 3);
+
+        // วาดตาดำกับขอบตา (eye)
+        int eyeSize = fishWidth / 5;
+        int eyeX = x + fishWidth / 3;
+        int eyeY = y + fishHeight / 3;
+
+        if ("right".equals(fish.direction)) {
+            eyeX += fishWidth / 3;
+        } else {
+            eyeX -= fishWidth / 3;
+        }
+
+        g2d.fillOval(eyeX, eyeY, eyeSize, eyeSize);
+        g2d.setColor(Color.BLACK);
+        g2d.drawOval(eyeX, eyeY, eyeSize, eyeSize);
+    }
+
+    private void drawScores(Graphics g) {
+        g.setColor(Color.BLACK);
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+        int y = 25;
+        int x = 10;
+        int lineHeight = g.getFontMetrics().getHeight();
+
+        for (Map.Entry<Integer, Fish> entry : fishHashMap.entrySet()) {
+            Fish fish = entry.getValue();
+            if (fish.isPlayer) {
+                int id = entry.getKey();
+                int playerNum = playerIdToNumber.computeIfAbsent(id, k -> nextPlayerNumber++);
+                String text = "Player " + playerNum + ", Score: " + (int) fish.score;
+                g.drawString(text, x, y);
+                y += lineHeight;
+                playerScores.put(id, fish.score);
+            }
+        }
+    }
+
+    private void drawStartScreen(Graphics g) {
+        g.setColor(Color.BLUE);
+        g.setFont(new Font("Arial", Font.BOLD, 40));
+        String title = "Fish Game Client";
+        FontMetrics fm = g.getFontMetrics();
+        int titleX = (getWidth() - fm.stringWidth(title)) / 2;
+        int titleY = getHeight() / 2 - 30;
+        g.drawString(title, titleX, titleY);
+
+        g.setColor(Color.BLACK);
+        g.setFont(new Font("Arial", Font.PLAIN, 24));
+        String msg = "Please press Start to begin the game";
+        int msgX = (getWidth() - g.getFontMetrics().stringWidth(msg)) / 2;
+        int msgY = getHeight() / 2 + 20;
+        g.drawString(msg, msgX, msgY);
+    }
+
+    private void drawGameOver(Graphics g) {
+        System.out.println("[drawGameOver] Final playerScores: " + playerScores);
+
+        g.setColor(Color.BLACK.darker());
+        g.setFont(new Font("Arial", Font.PLAIN, 24));
+        String message = "Game Over";
+        FontMetrics fm = g.getFontMetrics();
+        int x = (getWidth() - fm.stringWidth(message)) / 2;
+        int y = getHeight() / 2 - 60;
+        g.drawString(message, x, y);
+
+        g.setFont(new Font("Arial", Font.BOLD, 20));
+        int lineHeight = g.getFontMetrics().getHeight();
+        int scoreY = y + 50;
+
+        List<Map.Entry<Integer, Double>> sorted = new ArrayList<>(playerScores.entrySet());
+        sorted.sort((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()));
+
+        Double prevScore = null;
+        for (Map.Entry<Integer, Double> entry : sorted) {
+            int id = entry.getKey();
+            double score = entry.getValue();
+            int playerNum = playerIdToNumber.getOrDefault(id, nextPlayerNumber++);
+            String text = (prevScore != null && score == prevScore)
+                    ? "draw - Player " + playerNum + ", Final Score: " + (int) score
+                    : "Player " + playerNum + ", Final Score: " + (int) score;
+
+            int textWidth = g.getFontMetrics().stringWidth(text);
+            int scoreX = (getWidth() - textWidth) / 2;
+
+            g.setColor(new Color(255, 200, 200, 180));
+            g.fillRoundRect(scoreX - 8, scoreY - fm.getAscent(), textWidth + 16, lineHeight + 4, 10, 10);
+            g.setColor(Color.BLACK.darker());
+            g.drawString(text, scoreX, scoreY);
+
+            scoreY += lineHeight + 10;
+            prevScore = score;
         }
     }
 }

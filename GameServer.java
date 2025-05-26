@@ -88,20 +88,21 @@ public class GameServer {
     // ส่งสถานะปลาให้ client ทุกคน
     public static void broadcastFishState() {
         List<Socket> toRemove = new ArrayList<>();
-
         StringBuilder sb = new StringBuilder();
+
         for (Map.Entry<Socket, Fish> entry : fishMap.entrySet()) {
             Socket socket = entry.getKey();
             Fish f = entry.getValue();
 
-            // ปลา bot ว่าย เอง
+            // ให้ปลา bot เคลื่อนไหว
             if (!f.isPlayer) {
                 f.move(f.direction);
             }
 
+            // ถ้าปลาตายหรือล้มเหลว (disconnect)
             if (!f.isAlive) {
                 toRemove.add(socket);
-                continue; // ไม่ต้องส่งสถานะตัวที่ตายหรือหลุดขอบ
+                continue;
             }
 
             sb.append("id:").append(socket.hashCode())
@@ -114,16 +115,22 @@ public class GameServer {
                     .append("; ");
         }
 
+        // ส่ง REMOVE ไปหา client ทุกคน ก่อนลบจริง
         for (Socket s : toRemove) {
+            int fishId = s.hashCode();
+            for (ClientHandler h : handlers) {
+                h.send("REMOVE " + fishId);
+            }
             fishMap.remove(s);
         }
 
+        // ส่งสถานะทั้งหมดไปให้ client ทุกคน
         String data = "Fish:" + sb.toString();
-        String currentFishState = data;
         for (ClientHandler h : handlers) {
-            h.send(currentFishState);
+            h.send(data);
         }
-        System.err.println(currentFishState);
+
+        System.err.println(data); // debug log
     }
 
     // method สุ่ม สำหรับใช้สุ่มจุดเกิด

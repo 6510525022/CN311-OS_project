@@ -92,6 +92,13 @@ public class Client {
             System.out.println("Listening to server...");
             while (!(responseLine = reader.readLine()).equals("END")) {
 
+                if (responseLine.startsWith("REMOVE ")) {
+                    int idToRemove = Integer.parseInt(responseLine.substring(7));
+                    fishHashMap.remove(idToRemove);
+                    fishPanel.repaint();
+                    continue;
+                }
+
                 if (responseLine.startsWith("yourId:")) {
                     myId = Integer.parseInt(responseLine.split(":")[1]);
                     System.out.println("Your player ID is: " + myId);
@@ -153,7 +160,6 @@ public class Client {
                                 fishHashMap.put(id, newFish);
                             } else {
                                 updateFishFromServer(id, x, y, size, score);
-                                // อัพเดต isPlayer ด้วยถ้าต่างกัน
                                 Fish fish = fishHashMap.get(id);
                                 if (fish != null && fish.isPlayer != isPlayer) {
                                     fish.isPlayer = isPlayer;
@@ -162,7 +168,6 @@ public class Client {
                         }
                     }
 
-                    // ลบปลาที่ไม่ได้อยู่ใน receivedIds แล้ว
                     fishHashMap.keySet().removeIf(existingId -> !receivedIds.contains(existingId));
                 }
 
