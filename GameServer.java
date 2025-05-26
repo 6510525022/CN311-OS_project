@@ -41,7 +41,7 @@ public class GameServer {
                 checkFishCollisions(); // ชนหมาย
                 broadcastFishState(); // ขยับ
                 checkIfAllPlayersAreDead(); // เช็คว่าผู้เล่นตายหมดหรือยัง
-            }, 0, 20, TimeUnit.MILLISECONDS); // ทุก 20 ms เท่า client
+            }, 0, 16, TimeUnit.MILLISECONDS); // ทุก 16 ms เท่า client
 
             ScheduledExecutorService spawner = Executors.newScheduledThreadPool(1);
             spawner.scheduleAtFixedRate(() -> {
