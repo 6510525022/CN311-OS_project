@@ -95,17 +95,17 @@ public class Fish {
     public static Fish spawnEnemyFish(float avgPlayerSize, float avgSize, float avgY) {
         boolean spawnLeft = Math.random() < 0.5;
         float size;
-        if (avgPlayerSize < 60) {
+        if (avgPlayerSize < 70) {
             if (avgPlayerSize < avgSize) {
-                size = (float) (Math.random() * (avgPlayerSize * 1.25) + 5.0); // 5 - 1.25xavgSize
+                size = (float) (Math.random() * (avgPlayerSize * 1.10) + 5.0); // 5 - 1.10xavgSize
             } else {
-                size = (float) (Math.random() * (avgPlayerSize * 2.00) + 5.0); // 5 - 2.00xavgSize
+                size = (float) (Math.random() * (avgPlayerSize * 2.00) + (avgPlayerSize * 0.50)); // 0.50x - 2.50xavgSize
             }
         } else {
-            if (avgPlayerSize < avgSize) {
-                size = (float) (Math.random() * (avgPlayerSize * 1.25) + 20.0); // 20 - 1.25xavgSize
+            if (avgPlayerSize * 0.90 < avgSize) {
+                size = (float) (Math.random() * (avgPlayerSize * 0.90) + 5.0); // 5 - 0.90xavgSize
             } else {
-                size = (float) (Math.random() * (avgPlayerSize * 0.35) + (avgPlayerSize * 0.90)); // 0.90x - 1.25xavgSize
+                size = (float) (Math.random() * (avgPlayerSize * 0.45) + (avgPlayerSize * 0.95)); // 0.95x - 1.40xavgSize
             }
         }
 
