@@ -226,7 +226,6 @@ public class FishPanel extends JPanel {
         int lineHeight = g.getFontMetrics().getHeight();
 
         List<Map.Entry<Integer, Fish>> entries = new ArrayList<>(fishHashMap.entrySet());
-        Collections.reverse(entries);
         for (Map.Entry<Integer, Fish> entry : entries) {
             Fish fish = entry.getValue();
             if (fish.isPlayer) {
@@ -276,11 +275,18 @@ public class FishPanel extends JPanel {
         List<Map.Entry<Integer, Double>> sorted = new ArrayList<>(playerScores.entrySet());
         sorted.sort((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()));
 
+        int rank = 0;
+        int prevScore = -1;
         for (Map.Entry<Integer, Double> entry : sorted) {
             int id = entry.getKey();
             double score = entry.getValue();
             Integer pNum = playerNum.get(id);
-            String text = "Player " + (pNum != null ? pNum : id) + ", Final Score: " + (int) score;
+
+            if (score != prevScore) {
+                rank++;
+            }
+
+            String text = "(" + rank + ") Player " + (pNum != null ? pNum : id) + ", Final Score: " + (int) score;
 
             int textWidth = g.getFontMetrics().stringWidth(text);
             int scoreX = (getWidth() - textWidth) / 2;
@@ -291,6 +297,7 @@ public class FishPanel extends JPanel {
             g.drawString(text, scoreX, scoreY);
 
             scoreY += lineHeight + 10;
+            prevScore = (int) score;
         }
     }
 }
