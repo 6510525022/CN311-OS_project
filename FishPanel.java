@@ -4,20 +4,20 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.swing.*;
-import javax.swing.Timer;
 
 public class FishPanel extends JPanel {
 
     private ConcurrentHashMap<Integer, Fish> fishHashMap;
-    private int phase = 0;
+    private int phase = 0; // ใช้ควบคุมสถานะของเกม (0 = เริ่ม, 1 = เล่นอยู่, 2 = จบเกม)
 
-    private Map<Integer, Integer> playerNum = new HashMap<>();
-    private Map<Integer, Double> playerScores = new HashMap<>();
+    private Map<Integer, Integer> playerNum = new HashMap<>();    // เก็บ playerId → หมายเลข player
+    private Map<Integer, Double> playerScores = new HashMap<>();  // เก็บ playerId → score
 
     public FishPanel(ConcurrentHashMap<Integer, Fish> fishHashMap) {
         this.fishHashMap = fishHashMap;
 
-        Timer animationTimer = new Timer(20, e -> repaint());
+        // ตั้ง timer ให้ repaint() ทุก 20 มิลลิวินาที สำหรับ animation
+        javax.swing.Timer animationTimer = new javax.swing.Timer(20, e -> repaint());
         animationTimer.start();
     }
 
@@ -30,15 +30,9 @@ public class FishPanel extends JPanel {
     }
 
     public void removeFish(int id) {
-        System.out.println("[removeFish] Removing fish id: " + id);
         fishHashMap.remove(id);
-
-        if (playerScores.containsKey(id)) {
-            playerScores.remove(id);
-            playerNum.remove(id);
-            System.out.println("[removeFish] Removed player data for id: " + id);
-        }
-
+        playerScores.remove(id);
+        playerNum.remove(id);
         repaint();
     }
 
@@ -47,31 +41,11 @@ public class FishPanel extends JPanel {
         fishHashMap.putAll(newFishMap);
 
         if (phase == 1) {
-            cleanDisconnectedPlayers(); 
+            cleanDisconnectedPlayers(); // ลบข้อมูล player ที่หลุดออกจากเกม
         }
 
-        syncPlayerDataWithFishMap();
+        syncPlayerDataWithFishMap(); // อัปเดต playerScores และ playerNum ให้สอดคล้องกับ fish ใน map
         repaint();
-    }
-
-    public void updatePlayerScore(int id, double newScore) {
-        playerScores.put(id, newScore);
-    }
-
-    public void syncPlayerDataWithFishMap() {
-        System.out.println("[syncPlayerDataWithFishMap] Before sync playerScores: " + playerScores);
-        System.out.println("[syncPlayerDataWithFishMap] fishHashMap keys: " + fishHashMap.keySet());
-
-        for (Integer id : fishHashMap.keySet()) {
-            Fish fish = fishHashMap.get(id);
-            if (fish.isPlayer && !playerScores.containsKey(id)) {
-                playerScores.put(id, fish.score);
-                playerNum.put(id, fish.playerNum);
-                System.out.println("[syncPlayerDataWithFishMap] Added new active player id: " + id);
-            }
-        }
-
-        System.out.println("[syncPlayerDataWithFishMap] After sync playerScores: " + playerScores);
     }
 
     public void updateFishPosition(int id, float newX, float newY, float newSize) {
@@ -84,76 +58,54 @@ public class FishPanel extends JPanel {
         }
     }
 
+    public void updatePlayerScore(int id, double newScore) {
+        playerScores.put(id, newScore);
+    }
+
     public void setPhase(int phase) {
         this.phase = phase;
 
-        if (phase == 2) {
-            System.out.println("[setPhase] Game Over phase detected. Skipping sync to keep playerScores intact.");
-        } else if (phase == 0) {
-            playerNum = new HashMap<>();
-            playerScores = new HashMap<>();
+        if (phase == 0) {
+            // เริ่มต้นใหม่ ล้างข้อมูลทั้งหมด
+            playerNum.clear();
+            playerScores.clear();
         }
 
         repaint();
     }
 
-    private void cleanDisconnectedPlayers() {
-        if (phase != 1) {
-            return; 
+    // ซิงค์ข้อมูล player ที่อยู่ใน fishHashMap แต่ยังไม่มีใน playerScores และ playerNum
+    private void syncPlayerDataWithFishMap() {
+        for (Integer id : fishHashMap.keySet()) {
+            Fish fish = fishHashMap.get(id);
+            if (fish.isPlayer && !playerScores.containsKey(id)) {
+                playerScores.put(id, fish.score);
+                playerNum.put(id, fish.playerNum);
+            }
         }
+    }
+
+    // ลบข้อมูลของ player ที่หลุดออกจากเกม (ไม่มีใน fishHashMap)
+    private void cleanDisconnectedPlayers() {
         Set<Integer> currentFishIds = fishHashMap.keySet();
 
-        Iterator<Integer> scoreIt = playerScores.keySet().iterator();
-        while (scoreIt.hasNext()) {
-            int id = scoreIt.next();
-            if (!currentFishIds.contains(id)) {
-                scoreIt.remove();
-                System.out.println("[cleanDisconnectedPlayers] Removed playerScore for id: " + id);
-            }
-        }
-
-        Iterator<Integer> idIt = playerNum.keySet().iterator();
-        while (idIt.hasNext()) {
-            int id = idIt.next();
-            if (!currentFishIds.contains(id)) {
-                idIt.remove();
-                System.out.println("[cleanDisconnectedPlayers] Removed playerIdToNumber for id: " + id);
-            }
-        }
+        playerScores.keySet().removeIf(id -> !currentFishIds.contains(id));
+        playerNum.keySet().removeIf(id -> !currentFishIds.contains(id));
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
         Graphics2D g2d = (Graphics2D) g;
 
-        // background สีฟ้าอ่อน
-        g2d.setColor(new Color(135, 206, 250));  // Sky Blue
+        // วาดพื้นหลังสีฟ้าอ่อน
+        g2d.setColor(new Color(135, 206, 250));
         g2d.fillRect(0, 0, getWidth(), getHeight());
 
-        // วาดสาหร่าย (seaweed) ที่พื้น (สมมติฐานอยู่ด้านล่าง panel)
-        g2d.setColor(new Color(34, 139, 34)); // สีเขียวเข้ม (forest green)
-        int seaweedBaseY = getHeight() - 30;  // ตำแหน่งฐานสาหร่ายด้านล่าง
+        // วาด seaweed ที่พื้น panel
+        drawSeaweed(g2d);
 
-        // วาดสาหร่ายหลายต้นเป็นเส้นโค้ง
-        for (int i = 20; i < getWidth(); i += 40) {
-            // วาดเส้นโค้งง่าย ๆ ด้วย cubic curve (หรือใช้ drawPolyline)
-            int[] xPoints = {i, i - 5, i + 5, i - 5, i + 5, i};
-            int[] yPoints = {seaweedBaseY, seaweedBaseY - 20, seaweedBaseY - 40, seaweedBaseY - 60, seaweedBaseY - 80, seaweedBaseY - 100};
-            g2d.setStroke(new BasicStroke(3));  // ความหนาเส้น
-            g2d.drawPolyline(xPoints, yPoints, xPoints.length);
-        }
-
-        // ปริ้นไอดีปลา player
-        System.out.print("Rendering player fish ids: ");
-        for (Map.Entry<Integer, Fish> entry : fishHashMap.entrySet()) {
-            if (entry.getValue().isPlayer) {
-                System.out.print(entry.getKey() + " ");
-            }
-        }
-        System.out.println();
-
+        // วาดปลา
         if (phase == 1 || phase == 2) {
             for (Fish fish : fishHashMap.values()) {
                 if (fish.isAlive) {
@@ -162,33 +114,43 @@ public class FishPanel extends JPanel {
             }
         }
 
-        if (phase == 1) {
-            drawScores(g);
-        } else if (phase == 0) {
+        // วาดหน้าจอขึ้นอยู่กับ phase
+        if (phase == 0) {
             drawStartScreen(g);
+        } else if (phase == 1) {
+            drawScores(g);
         } else if (phase == 2) {
             drawGameOver(g);
         }
     }
 
+    private void drawSeaweed(Graphics2D g2d) {
+        g2d.setColor(new Color(34, 139, 34)); // สีเขียวเข้ม
+        int seaweedBaseY = getHeight() - 30;
+
+        for (int i = 20; i < getWidth(); i += 40) {
+            int[] xPoints = {i, i - 5, i + 5, i - 5, i + 5, i};
+            int[] yPoints = {seaweedBaseY, seaweedBaseY - 20, seaweedBaseY - 40, seaweedBaseY - 60, seaweedBaseY - 80, seaweedBaseY - 100};
+            g2d.setStroke(new BasicStroke(3));
+            g2d.drawPolyline(xPoints, yPoints, xPoints.length);
+        }
+    }
+
+    // วาดปลาแต่ละตัว
     private void drawFish(Graphics g, Fish fish) {
         int fishWidth = (int) (fish.size * 1.5);
-        int fishHeight = (int) (fish.size);
+        int fishHeight = (int) fish.size;
         int x = (int) fish.x;
         int y = (int) fish.y;
 
         Graphics2D g2d = (Graphics2D) g;
-
-        // วาดตัวปลา สีชมพู
         g2d.setColor(Color.PINK);
         g2d.fillOval(x, y, fishWidth, fishHeight);
-
-        // วาดขอบดำรอบปลา
         g2d.setColor(Color.BLACK);
         g2d.setStroke(new BasicStroke(2));
         g2d.drawOval(x, y, fishWidth, fishHeight);
 
-        // วาดหางปลา (tail) แบบเดิม แต่เพิ่มขอบดำ
+        // วาดหางปลา
         int[] tailX, tailY;
         if ("right".equals(fish.direction)) {
             tailX = new int[]{x, x - fishWidth / 4, x - fishWidth / 4};
@@ -197,27 +159,21 @@ public class FishPanel extends JPanel {
             tailX = new int[]{x + fishWidth, x + fishWidth + fishWidth / 4, x + fishWidth + fishWidth / 4};
             tailY = new int[]{y + fishHeight / 2, y, y + fishHeight};
         }
-
         g2d.fillPolygon(tailX, tailY, 3);
         g2d.setColor(Color.BLACK);
         g2d.drawPolygon(tailX, tailY, 3);
 
-        // วาดตาดำกับขอบตา (eye)
+        // วาดตา
         int eyeSize = fishWidth / 5;
         int eyeX = x + fishWidth / 3;
         int eyeY = y + fishHeight / 3;
-
-        if ("right".equals(fish.direction)) {
-            eyeX += fishWidth / 3;
-        } else {
-            eyeX -= fishWidth / 3;
-        }
+        eyeX += "right".equals(fish.direction) ? fishWidth / 3 : -fishWidth / 3;
 
         g2d.fillOval(eyeX, eyeY, eyeSize, eyeSize);
-        g2d.setColor(Color.BLACK);
         g2d.drawOval(eyeX, eyeY, eyeSize, eyeSize);
     }
 
+    // วาดคะแนนของผู้เล่นใน phase เล่นเกม
     private void drawScores(Graphics g) {
         g.setColor(Color.BLACK);
         g.setFont(new Font("Arial", Font.BOLD, 18));
@@ -225,21 +181,22 @@ public class FishPanel extends JPanel {
         int x = 10;
         int lineHeight = g.getFontMetrics().getHeight();
 
-        List<Map.Entry<Integer, Fish>> entries = new ArrayList<>(fishHashMap.entrySet());
-        for (Map.Entry<Integer, Fish> entry : entries) {
+        for (Map.Entry<Integer, Fish> entry : fishHashMap.entrySet()) {
             Fish fish = entry.getValue();
             if (fish.isPlayer) {
                 int id = entry.getKey();
-                int playerID= fish.playerNum;
-                String text = "Player " + playerID + ", Score: " + (int) fish.score;
+                String text = "Player " + fish.playerNum + ", Score: " + (int) fish.score;
                 g.drawString(text, x, y);
                 y += lineHeight;
+
+                // sync ค่า score ล่าสุดเข้า playerScores
                 playerScores.put(id, fish.score);
                 playerNum.put(id, fish.playerNum);
             }
         }
     }
 
+    // วาดหน้าจอตอนเริ่มเกม
     private void drawStartScreen(Graphics g) {
         g.setColor(Color.BLUE);
         g.setFont(new Font("Arial", Font.BOLD, 40));
@@ -257,9 +214,8 @@ public class FishPanel extends JPanel {
         g.drawString(msg, msgX, msgY);
     }
 
+    // วาดหน้าจอจบเกมพร้อมสรุปอันดับคะแนน
     private void drawGameOver(Graphics g) {
-        System.out.println("[drawGameOver] Final playerScores: " + playerScores);
-
         g.setColor(Color.BLACK.darker());
         g.setFont(new Font("Arial", Font.PLAIN, 24));
         String message = "Game Over";
@@ -282,12 +238,11 @@ public class FishPanel extends JPanel {
             double score = entry.getValue();
             Integer pNum = playerNum.get(id);
 
-            if (score != prevScore) {
+            if ((int) score != prevScore) {
                 rank++;
             }
 
             String text = "(" + rank + ") Player " + (pNum != null ? pNum : id) + ", Final Score: " + (int) score;
-
             int textWidth = g.getFontMetrics().stringWidth(text);
             int scoreX = (getWidth() - textWidth) / 2;
 
