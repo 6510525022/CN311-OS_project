@@ -5,11 +5,12 @@ public class Fish {
     public double x, y, size, speed = 1;
     public String direction, type;
     public boolean isPlayer, isAlive;
+    public int playerNum;
     private static final int WIDTH = 800;
     private static final int HEIGHT = 600;
     public double score;
 
-    Fish(float x, float y, float size, String direction, String type, boolean isPlayer) {
+    Fish(float x, float y, float size, String direction, String type, boolean isPlayer, int playerNum) {
         this.x = x;
         this.y = y;
         this.direction = direction;
@@ -18,10 +19,11 @@ public class Fish {
         this.isPlayer = isPlayer;
         this.isAlive = true;
         this.score = 0;
+        this.playerNum = playerNum;
     }
 
     Fish(float x, float y, float size, String direction, String type) {
-        this(x, y, size, direction, type, false);
+        this(x, y, size, direction, type, false, 0);
     }
 
     public boolean isSmash(Fish other) {

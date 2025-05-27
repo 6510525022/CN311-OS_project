@@ -11,9 +11,7 @@ public class FishPanel extends JPanel {
     private ConcurrentHashMap<Integer, Fish> fishHashMap;
     private int phase = 0;
 
-    private Map<Integer, Integer> playerIdToNumber = new HashMap<>();
-    private int nextPlayerNumber = 1;
-
+    private Map<Integer, Integer> playerNum = new HashMap<>();
     private Map<Integer, Double> playerScores = new HashMap<>();
 
     public FishPanel(ConcurrentHashMap<Integer, Fish> fishHashMap) {
@@ -25,9 +23,9 @@ public class FishPanel extends JPanel {
 
     public void addFish(int id, Fish fish) {
         fishHashMap.put(id, fish);
-        if (fish.isPlayer && !playerIdToNumber.containsKey(id)) {
-            playerIdToNumber.put(id, nextPlayerNumber++);
+        if (fish.isPlayer) {
             playerScores.put(id, fish.score);
+            playerNum.put(id, fish.playerNum);
         }
     }
 
@@ -37,7 +35,7 @@ public class FishPanel extends JPanel {
 
         if (playerScores.containsKey(id)) {
             playerScores.remove(id);
-            playerIdToNumber.remove(id);
+            playerNum.remove(id);
             System.out.println("[removeFish] Removed player data for id: " + id);
         }
 
@@ -49,7 +47,7 @@ public class FishPanel extends JPanel {
         fishHashMap.putAll(newFishMap);
 
         if (phase == 1) {
-            cleanDisconnectedPlayers();  // ✅ เรียกเฉพาะตอนเล่นเกม
+            cleanDisconnectedPlayers(); 
         }
 
         syncPlayerDataWithFishMap();
@@ -68,7 +66,7 @@ public class FishPanel extends JPanel {
             Fish fish = fishHashMap.get(id);
             if (fish.isPlayer && !playerScores.containsKey(id)) {
                 playerScores.put(id, fish.score);
-                playerIdToNumber.put(id, nextPlayerNumber++);
+                playerNum.put(id, fish.playerNum);
                 System.out.println("[syncPlayerDataWithFishMap] Added new active player id: " + id);
             }
         }
@@ -91,6 +89,9 @@ public class FishPanel extends JPanel {
 
         if (phase == 2) {
             System.out.println("[setPhase] Game Over phase detected. Skipping sync to keep playerScores intact.");
+        } else if (phase == 0) {
+            playerNum = new HashMap<>();
+            playerScores = new HashMap<>();
         }
 
         repaint();
@@ -98,7 +99,7 @@ public class FishPanel extends JPanel {
 
     private void cleanDisconnectedPlayers() {
         if (phase != 1) {
-            return;  // ✅ ป้องกันลบคะแนนใน Phase 2
+            return; 
         }
         Set<Integer> currentFishIds = fishHashMap.keySet();
 
@@ -111,7 +112,7 @@ public class FishPanel extends JPanel {
             }
         }
 
-        Iterator<Integer> idIt = playerIdToNumber.keySet().iterator();
+        Iterator<Integer> idIt = playerNum.keySet().iterator();
         while (idIt.hasNext()) {
             int id = idIt.next();
             if (!currentFishIds.contains(id)) {
@@ -224,15 +225,18 @@ public class FishPanel extends JPanel {
         int x = 10;
         int lineHeight = g.getFontMetrics().getHeight();
 
-        for (Map.Entry<Integer, Fish> entry : fishHashMap.entrySet()) {
+        List<Map.Entry<Integer, Fish>> entries = new ArrayList<>(fishHashMap.entrySet());
+        Collections.reverse(entries);
+        for (Map.Entry<Integer, Fish> entry : entries) {
             Fish fish = entry.getValue();
             if (fish.isPlayer) {
                 int id = entry.getKey();
-                int playerNum = playerIdToNumber.computeIfAbsent(id, k -> nextPlayerNumber++);
-                String text = "Player " + playerNum + ", Score: " + (int) fish.score;
+                int playerID= fish.playerNum;
+                String text = "Player " + playerID + ", Score: " + (int) fish.score;
                 g.drawString(text, x, y);
                 y += lineHeight;
                 playerScores.put(id, fish.score);
+                playerNum.put(id, fish.playerNum);
             }
         }
     }
@@ -272,14 +276,11 @@ public class FishPanel extends JPanel {
         List<Map.Entry<Integer, Double>> sorted = new ArrayList<>(playerScores.entrySet());
         sorted.sort((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()));
 
-        Double prevScore = null;
         for (Map.Entry<Integer, Double> entry : sorted) {
             int id = entry.getKey();
             double score = entry.getValue();
-            int playerNum = playerIdToNumber.getOrDefault(id, nextPlayerNumber++);
-            String text = (prevScore != null && score == prevScore)
-                    ? "draw - Player " + playerNum + ", Final Score: " + (int) score
-                    : "Player " + playerNum + ", Final Score: " + (int) score;
+            Integer pNum = playerNum.get(id);
+            String text = "Player " + (pNum != null ? pNum : id) + ", Final Score: " + (int) score;
 
             int textWidth = g.getFontMetrics().stringWidth(text);
             int scoreX = (getWidth() - textWidth) / 2;
@@ -290,7 +291,6 @@ public class FishPanel extends JPanel {
             g.drawString(text, scoreX, scoreY);
 
             scoreY += lineHeight + 10;
-            prevScore = score;
         }
     }
 }

@@ -122,7 +122,7 @@ public class Client {
                         }
 
                         String[] attributes = fishEntry.split(", ");
-                        int id = -1;
+                        int id = -1, playerNum = 0;
                         float x = 0, y = 0, size = 0, score = 0;
                         boolean isPlayer = false;
 
@@ -148,6 +148,9 @@ public class Client {
                                     score = Float.parseFloat(value);
                                 case "isPlayer" ->
                                     isPlayer = Boolean.parseBoolean(value);
+                                case "playerNum" -> {
+                                    playerNum = Integer.parseInt(value);
+                                }
                             }
                         }
 
@@ -155,11 +158,12 @@ public class Client {
                             receivedIds.add(id);
 
                             if (!fishHashMap.containsKey(id)) {
-                                Fish newFish = new Fish(x, y, size, "right", "normal", isPlayer);
+                                Fish newFish = new Fish(x, y, size, "right", "normal", isPlayer, playerNum);
                                 newFish.score = score;
+                                newFish.playerNum = playerNum;
                                 fishHashMap.put(id, newFish);
                             } else {
-                                updateFishFromServer(id, x, y, size, score);
+                                updateFishFromServer(id, x, y, size, score, playerNum);
                                 Fish fish = fishHashMap.get(id);
                                 if (fish != null && fish.isPlayer != isPlayer) {
                                     fish.isPlayer = isPlayer;
@@ -199,7 +203,7 @@ public class Client {
         frame.requestFocusInWindow();
     }
 
-    private void updateFishFromServer(int id, float newX, float newY, float newSize, float newScore) {
+    private void updateFishFromServer(int id, float newX, float newY, float newSize, float newScore, int playerNum) {
         Fish fish = fishHashMap.get(id);
         if (fish == null) {
             return;
@@ -219,6 +223,10 @@ public class Client {
 
         if (fish.score != newScore) {
             fish.score = newScore;
+        }
+
+        if (fish.playerNum != playerNum) {
+            fish.playerNum = playerNum;
         }
 
         fishPanel.repaint();

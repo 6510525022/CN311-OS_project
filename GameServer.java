@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class GameServer {
 
@@ -14,6 +15,9 @@ public class GameServer {
     final static int PORT = 1234;
     static int playerCount = 0;
     static GameState gameState;
+
+    private static AtomicInteger nextPlayerNum = new AtomicInteger(1);
+    private static Map<Socket, Integer> playerNumberMap = new ConcurrentHashMap<>();
 
     // hashmap เก็บปลาของ client (รองรับการทำงานหลาย thread)
     public static Map<Socket, Fish> fishMap = new ConcurrentHashMap<>();
@@ -112,6 +116,7 @@ public class GameServer {
                     .append(", isAlive:").append(f.isAlive)
                     .append(", score:").append(f.score)
                     .append(", isPlayer:").append(f.isPlayer)
+                    .append(", playerNum:").append(f.playerNum)
                     .append("; ");
         }
 
@@ -144,7 +149,16 @@ public class GameServer {
 
             if (currentPhase == 1) {
                 if (GameServer.fishMap.get(h.socket) == null) {
-                    Fish playerFish = new Fish(GameServer.random(200, 600), GameServer.random(300, 400), 25, "right", "player", true);
+                    // ใช้ playerNum เดิมถ้ามี หรือสร้างใหม่
+                    int playerNum = playerNumberMap.computeIfAbsent(h.socket, k -> nextPlayerNum.getAndIncrement());
+
+                    Fish playerFish = new Fish(GameServer.random(200, 600),
+                            GameServer.random(300, 400),
+                            25,
+                            "right",
+                            "player",
+                            true,
+                            playerNum);
                     GameServer.fishMap.put(h.socket, playerFish);
                 }
             }
