@@ -1,7 +1,7 @@
 
 public class Fish {
 
-    final static double step = 6, stepCheng = 1.2;
+    final static double step = 6;
     public double x, y, size, speed = 1;
     public String direction, type;
     public boolean isPlayer, isAlive;
@@ -24,21 +24,6 @@ public class Fish {
 
     Fish(float x, float y, float size, String direction, String type) {
         this(x, y, size, direction, type, false, 0);
-    }
-
-    public boolean isSmash(Fish other) {
-        if (this.isAlive && other.isAlive) {
-            // คำนวณการชนโดยพิจารณาจากตำแหน่งและขนาด
-            double distance = Math.sqrt(Math.pow(this.x - other.x, 2) + Math.pow(this.y - other.y, 2)); //คำนวณระยะห่าง
-            if (distance < (this.size / 2 + other.size / 2)) { // ห่าง < อ้วนชนกัน?
-                if (this.eat(other)) { // ถ้าเรากินได้
-                    return true; // เราไปต่อ
-                } else { // ถ้าเรากินไม่ได้
-                    return false; // เราตาย
-                }
-            }
-        }
-        return true; // ถ้าไม่มีการชนหรือเรายังมีชีวิต
     }
 
     // ฟังก์ชันสำหรับการเคลื่อนไหวของปลา

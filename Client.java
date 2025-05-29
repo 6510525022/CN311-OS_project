@@ -28,7 +28,7 @@ public class Client {
     private int myId = -1;  // เก็บ id ของผู้เล่น
 
     public static void main(String[] args) {
-        String host = "localhost";
+        String host = "26.158.112.66";
         int PORT = 1234;
 
         try (Socket socket = new Socket(host, PORT)) {
@@ -177,7 +177,6 @@ public class Client {
 
                 if (responseLine.startsWith("result:")) {
                     String newStatus = responseLine.split(":")[1];
-                    updateResultFromServer(newStatus);
                 }
             }
         } catch (IOException e) {
@@ -230,10 +229,6 @@ public class Client {
         }
 
         fishPanel.repaint();
-    }
-
-    private void updateResultFromServer(String Result) {
-        // implement logic if needed
     }
 
     private void sendMove(String msg) {

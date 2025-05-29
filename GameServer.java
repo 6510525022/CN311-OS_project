@@ -19,12 +19,11 @@ public class GameServer {
     private static AtomicInteger nextPlayerNum = new AtomicInteger(1);
     private static Map<Socket, Integer> playerNumberMap = new ConcurrentHashMap<>();
 
-    // hashmap เก็บปลาของ client (รองรับการทำงานหลาย thread)
+    // hashmap เก็บปลาของ client + bot (รองรับการทำงานหลาย thread)
     public static Map<Socket, Fish> fishMap = new ConcurrentHashMap<>();
 
     // เก็บรายชื่อ client ที่เชื่อมต่อกับ server
     // ใช้ synchronized list เพื่อให้หลายเธรดใช้งานพร้อมกันได้อย่างปลอดภัย
-    // (เรื่อง critical section)
     public static List<ClientHandler> handlers = Collections.synchronizedList(new ArrayList<>());
 
     public static void main(String[] args) {
@@ -135,7 +134,6 @@ public class GameServer {
             h.send(data);
         }
 
-        System.err.println(data); // debug log
     }
 
     // method สุ่ม สำหรับใช้สุ่มจุดเกิด
@@ -219,7 +217,7 @@ public class GameServer {
         double bCx = b.x + (b.size * 1.5) / 2.0;
         double bCy = b.y + (b.size) / 2.0;
 
-        // รัศมีแนวนอนและแนวตั้งของปลาแต่ละตัว (ellipse)
+        // รัศมีแนวนอนและแนวตั้งของปลาแต่ละตัว
         double aRx = (a.size * 1.5) / 2.0;
         double aRy = a.size / 2.0;
         double bRx = (b.size * 1.5) / 2.0;
@@ -235,7 +233,7 @@ public class GameServer {
         boolean bodyCollide = (nx * nx + ny * ny) <= 1.0;
 
         // --- ตรวจสอบการชนของหาง ---
-        // กำหนดขนาดหาง (เหมือนที่วาด)
+        // กำหนดขนาดหาง
         int aWidth = (int) (a.size * 1.5);
         int aHeight = (int) (a.size);
         int bWidth = (int) (b.size * 1.5);
@@ -245,12 +243,12 @@ public class GameServer {
         Rectangle aTailRect;
         if ("right".equals(a.direction)) {
             aTailRect = new Rectangle(
-                    (int) (a.x - aWidth / 4), // หางอยู่ด้านซ้ายตัวปลา
+                    (int) (a.x - aWidth / 4),
                     (int) (a.y + aHeight / 4),
                     aWidth / 4,
                     aHeight / 2
             );
-        } else { // left
+        } else {
             aTailRect = new Rectangle(
                     (int) (a.x + aWidth),
                     (int) (a.y + aHeight / 4),
@@ -268,7 +266,7 @@ public class GameServer {
                     bWidth / 4,
                     bHeight / 2
             );
-        } else { // left
+        } else {
             bTailRect = new Rectangle(
                     (int) (b.x + bWidth),
                     (int) (b.y + bHeight / 4),
@@ -324,7 +322,6 @@ class ClientHandler extends Thread {
         try (
                 InputStream input = socket.getInputStream(); BufferedReader reader = new BufferedReader(new InputStreamReader(input)); OutputStream output = socket.getOutputStream()) {
             writer = new PrintWriter(output, true);
-            System.out.println("____SERVER SEND____, phase:" + currentPhase);
             writer.println("phase:" + currentPhase);
             writer.println("END:");
 
@@ -355,8 +352,6 @@ class ClientHandler extends Thread {
                             gameState.setGamePhase(2);
                             GameServer.broadcastPhase(2);
                             System.err.println("เกมจบแล้ว result phase {next}");
-                        } else {
-                            System.err.println("In-game phase {up, down, left, right, next}");
                         }
                         break;
 
@@ -373,12 +368,13 @@ class ClientHandler extends Thread {
             }
 
         } catch (IOException e) {
-            System.err.println("Client disconnected unexpectedly: " + socket);
+            System.err.println("Client disconnected unexpectedly: " + ", Socket=" + socket.getPort());
         } finally {
             // ======= เมื่อ client ออกจากระบบ =======
+            int clientId = socket.hashCode();
             GameServer.fishMap.remove(socket);
             GameServer.handlers.remove(this);
-            System.out.println("Client removed: " + socket);
+            System.out.println("Client removed: ID=" + clientId + ", Socket=" + socket.getPort());
 
             try {
                 socket.close();

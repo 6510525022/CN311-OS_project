@@ -85,7 +85,7 @@ public class FishPanel extends JPanel {
         }
     }
 
-    // ลบข้อมูลของ player ที่หลุดออกจากเกม (ไม่มีใน fishHashMap)
+    // ลบข้อมูลของ player ที่หลุดออกจากเกม
     private void cleanDisconnectedPlayers() {
         Set<Integer> currentFishIds = fishHashMap.keySet();
 
@@ -102,7 +102,7 @@ public class FishPanel extends JPanel {
         g2d.setColor(new Color(135, 206, 250));
         g2d.fillRect(0, 0, getWidth(), getHeight());
 
-        // วาด seaweed ที่พื้น panel
+        // วาด seaweed
         drawSeaweed(g2d);
 
         // วาดปลา
@@ -114,7 +114,6 @@ public class FishPanel extends JPanel {
             }
         }
 
-        // วาดหน้าจอขึ้นอยู่กับ phase
         if (phase == 0) {
             drawStartScreen(g);
         } else if (phase == 1) {
@@ -125,9 +124,8 @@ public class FishPanel extends JPanel {
     }
 
     private void drawSeaweed(Graphics2D g2d) {
-        g2d.setColor(new Color(34, 139, 34)); // สีเขียวเข้ม
+        g2d.setColor(new Color(34, 139, 34));
         int seaweedBaseY = getHeight() - 30;
-
         for (int i = 20; i < getWidth(); i += 40) {
             int[] xPoints = {i, i - 5, i + 5, i - 5, i + 5, i};
             int[] yPoints = {seaweedBaseY, seaweedBaseY - 20, seaweedBaseY - 40, seaweedBaseY - 60, seaweedBaseY - 80, seaweedBaseY - 100};
