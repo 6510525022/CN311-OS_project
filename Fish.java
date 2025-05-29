@@ -10,7 +10,7 @@ public class Fish {
     private static final int HEIGHT = 600;
     public double score;
 
-    Fish(float x, float y, float size, String direction, String type, boolean isPlayer, int playerNum) {
+    public Fish(float x, float y, float size, String direction, String type, boolean isPlayer, int playerNum) {
         this.x = x;
         this.y = y;
         this.direction = direction;
@@ -22,7 +22,7 @@ public class Fish {
         this.playerNum = playerNum;
     }
 
-    Fish(float x, float y, float size, String direction, String type) {
+    public Fish(float x, float y, float size, String direction, String type) {
         this(x, y, size, direction, type, false, 0);
     }
 

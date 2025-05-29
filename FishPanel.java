@@ -198,7 +198,7 @@ public class FishPanel extends JPanel {
     private void drawStartScreen(Graphics g) {
         g.setColor(Color.BLUE);
         g.setFont(new Font("Arial", Font.BOLD, 40));
-        String title = "Fish Game Client";
+        String title = "Fish Game";
         FontMetrics fm = g.getFontMetrics();
         int titleX = (getWidth() - fm.stringWidth(title)) / 2;
         int titleY = getHeight() / 2 - 30;

@@ -25,8 +25,6 @@ public class Client {
     // ใช้สำหรับตรวจสอบว่าปุ่มไหนถูกกดค้างอยู่ เพื่อให้เคลื่อนที่แบบเฉียงได้
     private Set<Integer> pressedKeys = new HashSet<>();
 
-    private int myId = -1;  // เก็บ id ของผู้เล่น
-
     public static void main(String[] args) {
         String host = "26.158.112.66";
         int PORT = 1234;
@@ -99,11 +97,6 @@ public class Client {
                     continue;
                 }
 
-                if (responseLine.startsWith("yourId:")) {
-                    myId = Integer.parseInt(responseLine.split(":")[1]);
-                    System.out.println("Your player ID is: " + myId);
-                }
-
                 if (responseLine.startsWith("phase:")) {
                     int newPhase = Integer.parseInt(responseLine.split(":")[1]);
                     updatePhaseFromServer(newPhase);
@@ -113,6 +106,7 @@ public class Client {
                     String data = responseLine.substring("Fish:".length());
                     String[] fishEntries = data.split(";");
 
+                    //set ID ปลาที่รับมาทั้งหมดจาก Server
                     Set<Integer> receivedIds = new HashSet<>();
 
                     for (String fishEntry : fishEntries) {
@@ -125,8 +119,8 @@ public class Client {
                         int id = -1, playerNum = 0;
                         float x = 0, y = 0, size = 0, score = 0;
                         boolean isPlayer = false;
-
                         for (String attr : attributes) {
+                            //สร้าง Array 2 ช่อง
                             String[] keyValue = attr.split(":");
                             if (keyValue.length != 2) {
                                 continue;
@@ -172,11 +166,8 @@ public class Client {
                         }
                     }
 
+                    //ลบปลาที่อยู่ใน fishHashMap แต่ไม่อยู่ใน receiveIds แล้ว (กรณี disconnect)
                     fishHashMap.keySet().removeIf(existingId -> !receivedIds.contains(existingId));
-                }
-
-                if (responseLine.startsWith("result:")) {
-                    String newStatus = responseLine.split(":")[1];
                 }
             }
         } catch (IOException e) {
@@ -235,6 +226,7 @@ public class Client {
         writer.println(msg);
     }
 
+    //เชื่อมปุ่มกด (W, A, S, D) กับระบบของเกม เพื่อบอกว่าปุ่มใดกดอยู่
     private void setupKeyBindings(JComponent component) {
         InputMap inputMap = component.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         ActionMap actionMap = component.getActionMap();
@@ -264,7 +256,7 @@ public class Client {
         }
     }
 
-    // ส่งการกดคีย์ทุกๆ 16 ms
+    // ส่งการกดคีย์ทุกๆ 16 ms เพื่อทำให้ปลาขยับ
     private void setupMovementTimer() {
         javax.swing.Timer movementTimer = new javax.swing.Timer(16, e -> {
             if (phase != 1) {
