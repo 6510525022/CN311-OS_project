@@ -17,7 +17,7 @@ public class FishPanel extends JPanel {
         this.fishHashMap = fishHashMap;
 
         // ตั้ง timer ให้ repaint() ทุก 20 มิลลิวินาที สำหรับ animation
-        javax.swing.Timer animationTimer = new javax.swing.Timer(20, e -> repaint());
+        javax.swing.Timer animationTimer = new javax.swing.Timer(16, e -> repaint());
         animationTimer.start();
     }
 

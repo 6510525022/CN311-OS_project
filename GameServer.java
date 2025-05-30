@@ -244,9 +244,9 @@ public class GameServer {
         if ("right".equals(a.direction)) {
             aTailRect = new Rectangle(
                     (int) (a.x - aWidth / 4),
-                    (int) (a.y + aHeight / 4),
+                    (int) (a.y + aHeight / 4), //ตำแหน่งบนซ้าย (top-left corner) ของสี่เหลี่ยม
                     aWidth / 4,
-                    aHeight / 2
+                    aHeight / 2 //ความกว้างของหางเป็น 1/4 ของ width และความยาวของหางเป็น 1/2 ของ height
             );
         } else {
             aTailRect = new Rectangle(
@@ -277,9 +277,9 @@ public class GameServer {
 
         // ตรวจสอบว่า body หรือ tail ชนกัน
         boolean tailCollide = aTailRect.intersects(
-                new Rectangle((int) b.x, (int) b.y, bWidth, bHeight)
+                new Rectangle((int) b.x, (int) b.y, bWidth, bHeight) //เช็คว่า หางของปลา a ชนกับตัวปลา b
         ) || bTailRect.intersects(
-                new Rectangle((int) a.x, (int) a.y, aWidth, aHeight)
+                new Rectangle((int) a.x, (int) a.y, aWidth, aHeight) //เช็คว่า หางของปลา b ชนกับตัวปลา a
         );
 
         return bodyCollide || tailCollide;
