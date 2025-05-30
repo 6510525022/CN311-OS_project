@@ -158,10 +158,6 @@ public class Client {
                                 fishHashMap.put(id, newFish);
                             } else {
                                 updateFishFromServer(id, x, y, size, score, playerNum);
-                                Fish fish = fishHashMap.get(id);
-                                if (fish != null && fish.isPlayer != isPlayer) {
-                                    fish.isPlayer = isPlayer;
-                                }
                             }
                         }
                     }
