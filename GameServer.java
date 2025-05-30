@@ -209,19 +209,23 @@ public class GameServer {
     }
 
     public static boolean isColliding(Fish a, Fish b) {
+        int aWidth = (int) (a.size * 1.5);
+        int aHeight = (int) (a.size);
+        int bWidth = (int) (b.size * 1.5);
+        int bHeight = (int) (b.size);
         // จุดศูนย์กลางปลา a
-        double aCx = a.x + (a.size * 1.5) / 2.0;
-        double aCy = a.y + (a.size) / 2.0;
+        double aCx = a.x + aWidth / 2.0;
+        double aCy = a.y + aHeight / 2.0;
 
         // จุดศูนย์กลางปลา b
-        double bCx = b.x + (b.size * 1.5) / 2.0;
-        double bCy = b.y + (b.size) / 2.0;
+        double bCx = b.x + bWidth / 2.0;
+        double bCy = b.y + bHeight / 2.0;
 
         // รัศมีแนวนอนและแนวตั้งของปลาแต่ละตัว
-        double aRx = (a.size * 1.5) / 2.0;
-        double aRy = a.size / 2.0;
-        double bRx = (b.size * 1.5) / 2.0;
-        double bRy = b.size / 2.0;
+        double aRx = aWidth / 2.0;
+        double aRy = aHeight / 2.0;
+        double bRx = bWidth / 2.0;
+        double bRy = bHeight / 2.0;
 
         double dx = aCx - bCx;
         double dy = aCy - bCy;
@@ -233,18 +237,12 @@ public class GameServer {
         boolean bodyCollide = (nx * nx + ny * ny) <= 1.0;
 
         // --- ตรวจสอบการชนของหาง ---
-        // กำหนดขนาดหาง
-        int aWidth = (int) (a.size * 1.5);
-        int aHeight = (int) (a.size);
-        int bWidth = (int) (b.size * 1.5);
-        int bHeight = (int) (b.size);
-
-        // สร้าง bounding box ของหางปลา a
+        // สร้าง hit box ของหางปลา a
         Rectangle aTailRect;
         if ("right".equals(a.direction)) {
             aTailRect = new Rectangle(
                     (int) (a.x - aWidth / 4),
-                    (int) (a.y + aHeight / 4), //ตำแหน่งบนซ้าย (top-left corner) ของสี่เหลี่ยม
+                    (int) (a.y + aHeight / 4), //ตำแหน่งบนซ้ายของสี่เหลี่ยม
                     aWidth / 4,
                     aHeight / 2 //ความกว้างของหางเป็น 1/4 ของ width และความยาวของหางเป็น 1/2 ของ height
             );
@@ -257,7 +255,7 @@ public class GameServer {
             );
         }
 
-        // สร้าง bounding box ของหางปลา b
+        // สร้าง hit box ของหางปลา b
         Rectangle bTailRect;
         if ("right".equals(b.direction)) {
             bTailRect = new Rectangle(
